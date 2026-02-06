@@ -1,0 +1,29 @@
+nqswap:
+  loader: jsonl_template
+  path: data/nqswap.jsonl
+  fields:
+    question: question
+    context: context
+    answer_context: answer_context
+    answer_param: answer_param
+  templates:
+    context: "Context: {context}\nQuestion: {question}\nAnswer:"
+    param: "Question: {question}\nAnswer:"
+  targets:
+    context: answer_context
+    param: answer_param
+
+macnoise:
+  loader: jsonl_template
+  path: data/macnoise.jsonl
+  fields:
+    question: question
+    context: context
+    answer_context: answer_context
+    answer_param: answer_param
+  templates:
+    context: "Context: {context}\nQuestion: {question}\nAnswer:"
+    param: "Question: {question}\nAnswer:"
+  targets:
+    context: answer_context
+    param: answer_param

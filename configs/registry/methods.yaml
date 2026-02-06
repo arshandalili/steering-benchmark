@@ -1,0 +1,17 @@
+diffmean:
+  name: diffmean
+  layer: 15
+  token_position: last
+  scale: 1.0
+  normalize: true
+
+spare:
+  name: spare
+  layer: 15
+  token_position: last
+  scale: 2.0
+  normalize: true
+  sae:
+    weights_path: artifacts/sae/llama2_layer15_sae.pt
+    activation: relu
+    topk_proportion: 0.07

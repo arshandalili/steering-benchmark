@@ -1,0 +1,22 @@
+name: spare_llama2_nqswap
+model: llama2_7b
+dataset: nqswap
+method: spare
+method_overrides:
+  layers: [12, 13, 14, 15]
+  scale: 2.0
+run:
+  seed: 42
+  train:
+    group_a: context
+    group_b: param
+    max_examples: 512
+    batch_size: 8
+  eval:
+    group: context
+    max_examples: 200
+    metrics:
+      - exact_match
+    generation:
+      max_new_tokens: 8
+      do_sample: false

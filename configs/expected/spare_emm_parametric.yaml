@@ -1,0 +1,12 @@
+source: "SpARE paper Table 1"
+metric: "EMM"
+setting: "Steer to Use Parametric Knowledge"
+values:
+  nqswap:
+    llama3_8b: 77.69
+    llama2_7b: 69.32
+    gemma2_9b: 73.78
+  macnoise:
+    llama3_8b: 92.24
+    llama2_7b: 87.30
+    gemma2_9b: 87.96

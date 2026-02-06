@@ -1,0 +1,19 @@
+name: diffmean_llama2_nqswap
+model: llama2_7b
+dataset: nqswap
+method: diffmean
+run:
+  seed: 42
+  train:
+    group_a: context
+    group_b: param
+    max_examples: 512
+    batch_size: 8
+  eval:
+    group: context
+    max_examples: 200
+    metrics:
+      - exact_match
+    generation:
+      max_new_tokens: 8
+      do_sample: false

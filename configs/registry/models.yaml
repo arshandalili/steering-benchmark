@@ -1,0 +1,23 @@
+llama2_7b:
+  type: hf
+  hf_id: meta-llama/Llama-2-7b-hf
+  dtype: bfloat16
+  device_map: auto
+  trust_remote_code: false
+  hook_module: model.layers.{layer}
+
+llama3_8b:
+  type: hf
+  hf_id: meta-llama/Meta-Llama-3-8B
+  dtype: bfloat16
+  device_map: auto
+  trust_remote_code: false
+  hook_module: model.layers.{layer}
+
+gemma2_9b:
+  type: hf
+  hf_id: google/gemma-2-9b
+  dtype: bfloat16
+  device_map: auto
+  trust_remote_code: false
+  hook_module: model.layers.{layer}
