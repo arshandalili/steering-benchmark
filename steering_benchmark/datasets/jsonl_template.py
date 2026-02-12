@@ -43,7 +43,12 @@ class JsonlTemplateDataset(BaseDataset):
             data[key] = row.get(field_name, "")
         return template.format(**data)
 
-    def iter_group(self, group: str, limit: Optional[int] = None) -> Iterator[Example]:
+    def iter_group(
+        self,
+        group: str,
+        limit: Optional[int] = None,
+        split: Optional[str] = None,
+    ) -> Iterator[Example]:
         if group not in self.templates:
             raise KeyError(f"Unknown group template: {group}")
         template = self.templates[group]

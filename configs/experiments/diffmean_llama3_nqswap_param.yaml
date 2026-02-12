@@ -1,0 +1,35 @@
+name: diffmean_llama3_nqswap_param
+model: llama3_8b
+dataset: nq_swap_hf
+method: diffmean
+method_overrides:
+  layer: 20
+  token_position: last
+  scale: 1.0
+run:
+  seed: 42
+  factors: [0.0, 1.0]
+  factor_selection:
+    metric: exact_match_param
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_a: param
+    group_b: context
+    max_examples: 50
+    batch_size: 1
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 20
+    answer_extraction: auto
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 16
+      do_sample: false
+      max_prompt_tokens: 1024

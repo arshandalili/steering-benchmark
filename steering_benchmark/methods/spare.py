@@ -92,13 +92,13 @@ class SpARESteering(SteeringMethod):
         limit: int,
         batch_size: int,
         sae: SparseAutoencoder,
+        split: str | None,
     ) -> torch.Tensor:
         running_sum = None
         count = 0
-        examples = dataset.iter_group(group, limit=limit)
+        examples = dataset.iter_group(group, limit=limit, split=split)
         for batch in self._batched_prompts(examples, batch_size):
-            hidden = model.encode_hidden(batch, layer=layer, token_position=token_position)
-            hidden = torch.tensor(hidden)
+            hidden = model.encode_hidden(batch, layer=layer, token_position=token_position).float()
             features = sae.encode(hidden)
             if running_sum is None:
                 running_sum = features.sum(dim=0)
@@ -153,11 +153,16 @@ class SpARESteering(SteeringMethod):
         group_b = train_cfg.get("group_b", "param")
         limit = int(train_cfg.get("max_examples", 512))
         batch_size = int(train_cfg.get("batch_size", 8))
+        split = train_cfg.get("split", run_cfg.get("splits", {}).get("train"))
 
         specs = []
         for layer in layers:
-            mean_a = self._mean_features(model, dataset, group_a, layer, token_position, limit, batch_size, sae)
-            mean_b = self._mean_features(model, dataset, group_b, layer, token_position, limit, batch_size, sae)
+            mean_a = self._mean_features(
+                model, dataset, group_a, layer, token_position, limit, batch_size, sae, split
+            )
+            mean_b = self._mean_features(
+                model, dataset, group_b, layer, token_position, limit, batch_size, sae, split
+            )
             diff = mean_a - mean_b
 
             if threshold is not None:

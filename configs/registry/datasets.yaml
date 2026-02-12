@@ -27,3 +27,77 @@ macnoise:
   targets:
     context: answer_context
     param: answer_param
+
+nq_swap_hf:
+  loader: nq_swap
+  split: dev
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.6
+    eval: 0.2
+    test: 0.2
+  answer_policy: list
+
+nq_swap_openbook:
+  loader: nq_swap
+  split: dev
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.6
+    eval: 0.2
+    test: 0.2
+  k_shot: 4
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: false
+  answer_policy: list
+
+nq_swap_openbook_sae:
+  loader: nq_swap
+  split: dev
+  cache_dir: data/hf
+  split_policy: shared
+  shuffle_splits: false
+  k_shot: 4
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: false
+  answer_policy: list
+
+nq_swap_openbook_noconflict:
+  loader: nq_swap
+  split: dev
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.6
+    eval: 0.2
+    test: 0.2
+  k_shot: 4
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: true
+  answer_policy: list
+
+nq_swap_closebook:
+  loader: nq_swap
+  split: dev
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.6
+    eval: 0.2
+    test: 0.2
+  k_shot: 32
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  answer_policy: list
+
+nq_swap_closebook_sae:
+  loader: nq_swap
+  split: dev
+  cache_dir: data/hf
+  split_policy: shared
+  shuffle_splits: false
+  k_shot: 32
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  answer_policy: list

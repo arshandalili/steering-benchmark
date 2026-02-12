@@ -22,16 +22,25 @@ class DiffMeanSteering(SteeringMethod):
         if batch:
             yield batch
 
-    def _mean_hidden(self, model, dataset, group: str, layer: int, token_position: str | int, limit: int, batch_size: int) -> torch.Tensor:
+    def _mean_hidden(
+        self,
+        model,
+        dataset,
+        group: str,
+        layer: int,
+        token_position: str | int,
+        limit: int,
+        batch_size: int,
+        split: str | None,
+    ) -> torch.Tensor:
         if token_position == "all":
             raise ValueError("DiffMean requires a specific token position, not 'all'.")
 
         running_sum = None
         count = 0
-        examples = dataset.iter_group(group, limit=limit)
+        examples = dataset.iter_group(group, limit=limit, split=split)
         for batch in self._batched_prompts(examples, batch_size):
-            hidden = model.encode_hidden(batch, layer=layer, token_position=token_position)
-            hidden = torch.tensor(hidden)
+            hidden = model.encode_hidden(batch, layer=layer, token_position=token_position).float()
             if running_sum is None:
                 running_sum = hidden.sum(dim=0)
             else:
@@ -56,11 +65,16 @@ class DiffMeanSteering(SteeringMethod):
         group_b = train_cfg.get("group_b", "param")
         limit = int(train_cfg.get("max_examples", 512))
         batch_size = int(train_cfg.get("batch_size", 8))
+        split = train_cfg.get("split", run_cfg.get("splits", {}).get("train"))
 
         specs = []
         for layer in layers:
-            mean_a = self._mean_hidden(model, dataset, group_a, layer, token_position, limit, batch_size)
-            mean_b = self._mean_hidden(model, dataset, group_b, layer, token_position, limit, batch_size)
+            mean_a = self._mean_hidden(
+                model, dataset, group_a, layer, token_position, limit, batch_size, split
+            )
+            mean_b = self._mean_hidden(
+                model, dataset, group_b, layer, token_position, limit, batch_size, split
+            )
             direction = mean_a - mean_b
 
             if normalize:

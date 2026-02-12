@@ -21,3 +21,19 @@ gemma2_9b:
   device_map: auto
   trust_remote_code: false
   hook_module: model.layers.{layer}
+
+gpt2:
+  type: hf
+  hf_id: gpt2
+  dtype: float32
+  device_map: auto
+  trust_remote_code: false
+  hook_module: transformer.h.{layer}
+
+tiny_gpt2:
+  type: hf
+  hf_id: sshleifer/tiny-gpt2
+  dtype: float32
+  device_map: auto
+  trust_remote_code: false
+  hook_module: transformer.h.{layer}

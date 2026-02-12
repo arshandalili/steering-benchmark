@@ -1,0 +1,34 @@
+name: prompt_llama3_nqswap_context
+model: llama3_8b
+dataset: nq_swap_hf
+method: prompt_baseline
+method_overrides:
+  mode: context
+  prefix_context: "Use the provided context to answer the question. If the context is insufficient, say 'unknown'."
+run:
+  seed: 42
+  factors: [1.0]
+  factor_selection:
+    metric: exact_match
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_a: context
+    group_b: param
+    max_examples: 50
+    batch_size: 1
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 20
+    answer_extraction: auto
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 16
+      do_sample: false
+      max_prompt_tokens: 1024

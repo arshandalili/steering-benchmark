@@ -1,0 +1,36 @@
+name: actadd_llama2_nqswap_context
+model: llama2_7b
+dataset: nq_swap_openbook_sae
+method: actadd
+method_overrides:
+  layers: [12, 13, 14, 15]
+  token_position: last
+  scale: 2.0
+run:
+  seed: 42
+  factors: [1.0]
+  factor_selection:
+    metric: exact_match
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_pos: context
+    group_neg: param
+    max_examples: 512
+    batch_size: 4
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: null
+    answer_extraction: first_line
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 12
+      do_sample: false
+      eos_token_id_text: "\n\n"
+      max_prompt_tokens: 4096

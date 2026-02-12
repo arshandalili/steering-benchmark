@@ -8,6 +8,9 @@ PROJECT_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 source "${SCRIPT_DIR}/activate_env.sh"
 
 export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH:-}"
+export HF_HOME="${PROJECT_ROOT}/data/hf_home"
+export TRANSFORMERS_CACHE="${PROJECT_ROOT}/data/hf_home/transformers"
+export HF_DATASETS_CACHE="${PROJECT_ROOT}/data/hf_home/datasets"
 
 if [ "$#" -lt 1 ]; then
   echo "Usage: $0 <experiment_yaml> [extra args]" >&2

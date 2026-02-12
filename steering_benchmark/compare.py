@@ -32,8 +32,29 @@ def main() -> None:
     results = load_json(args.results)
     expected = load_yaml(args.expected)
 
-    expected_value = expected["values"][args.dataset][args.model]
-    actual_value = results["steered"].get(args.metric)
+    if "values" in expected:
+        expected_value = expected["values"][args.dataset][args.model]
+    elif "metrics" in expected:
+        metric_key = args.metric
+        metric_block = expected["metrics"]
+        if metric_key in metric_block:
+            expected_value = metric_block[metric_key][args.dataset][args.model]
+        else:
+            metric_key = metric_key.upper()
+            if metric_key not in metric_block:
+                raise KeyError(f"Metric '{args.metric}' not found in expected file")
+            expected_value = metric_block[metric_key][args.dataset][args.model]
+    else:
+        raise KeyError("Expected file must contain 'values' or 'metrics'")
+
+    metric_key = args.metric
+    metric_aliases = {"EMM": "exact_match_param", "EMC": "exact_match"}
+    if metric_key.upper() in metric_aliases:
+        metric_key = metric_aliases[metric_key.upper()]
+
+    actual_value = results.get("test", {}).get("steered", {}).get(metric_key)
+    if actual_value is None:
+        actual_value = results.get("steered", {}).get(metric_key)
     if actual_value is None:
         raise KeyError(f"Metric '{args.metric}' not found in results")
 

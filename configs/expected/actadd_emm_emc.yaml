@@ -1,0 +1,21 @@
+source: "Steering Knowledge Selection Behaviours in LLMs via SAE-Based Representation Engineering (Table 1)"
+method: "ActAdd"
+metrics:
+  EMM:
+    nqswap:
+      llama3_8b: 37.87
+      llama2_7b: 31.43
+      gemma2_9b: 27.67
+    macnoise:
+      llama3_8b: 26.17
+      llama2_7b: 27.52
+      gemma2_9b: 29.75
+  EMC:
+    nqswap:
+      llama3_8b: 51.91
+      llama2_7b: 47.48
+      gemma2_9b: 46.90
+    macnoise:
+      llama3_8b: 73.01
+      llama2_7b: 69.64
+      gemma2_9b: 59.66

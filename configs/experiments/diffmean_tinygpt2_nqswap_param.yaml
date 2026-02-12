@@ -1,0 +1,36 @@
+name: diffmean_tinygpt2_nqswap_param
+model: tiny_gpt2
+dataset: nq_swap_openbook_sae
+method: diffmean
+method_overrides:
+  layer: 1
+  token_position: last
+  scale: 1.0
+run:
+  seed: 42
+  factors: [0.0, 0.5, 1.0, 2.0]
+  factor_selection:
+    metric: exact_match_param
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_a: param
+    group_b: context
+    max_examples: 200
+    batch_size: 8
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 200
+    answer_extraction: first_line
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 12
+      do_sample: false
+      eos_token_id_text: "\n\n"
+      max_prompt_tokens: 512

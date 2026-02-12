@@ -3,3 +3,5 @@ transformers
 datasets
 pyyaml
 numpy
+accelerate
+tqdm
