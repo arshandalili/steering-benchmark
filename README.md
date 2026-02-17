@@ -1,113 +1,258 @@
 # Steering Benchmark
 
-A plug-and-play benchmarking framework for steering methods that modify hidden states in LLMs. The pipeline separates **models**, **datasets**, and **steering methods**, so you can swap any of them without rewriting the evaluation loop.
+Config-driven benchmarking framework for activation steering in LLMs.
 
-## Key ideas
-- **Unified intervention interface**: all steering methods output an intervention that modifies hidden states at a chosen layer/token position.
-- **Registries**: add new datasets or methods by dropping in a module and registering it.
-- **Config-driven**: models, datasets, and methods live in YAML registries; experiments reference them and add overrides.
+It separates **model adapters**, **dataset loaders**, and **steering methods** so you can run controlled comparisons without rewriting the training/evaluation loop.
 
-## Layout
-```
+## Features
+
+- Unified runner for steering methods that produce hidden-state interventions.
+- Registry-based components (`models`, `datasets`, `methods`) defined in YAML.
+- AxBench-style factor selection on eval split, then reporting on held-out test split.
+- Built-in support for sweeps (`factors`, `layers`, `prompt_variants`, `ood`) and side-effect evaluation.
+- Utilities for result aggregation (`report.py`) and expected-value checks (`compare.py`).
+
+## Repository Structure
+
+```text
 steering_benchmark/
-  configs/
-    registry/            # models, datasets, methods
-    experiments/         # experiment configs
-    expected/            # expected results for comparisons
-  steering_benchmark/
-    core/                # runner, hooks, metrics
-    datasets/            # dataset loaders
-    methods/             # steering methods
-    models/              # model adapters
-  scripts/
-    activate_env.sh      # use the shared conda/venv
-    run_benchmark.sh     # run an experiment
+├── configs/
+│   ├── experiments/        # Runnable experiment YAMLs
+│   ├── registry/           # models.yaml, datasets.yaml, methods.yaml
+│   └── expected/           # Reference values for compare.py
+├── scripts/
+│   ├── activate_env.sh
+│   ├── run_benchmark.sh
+│   └── run_smoke_test.sh
+├── steering_benchmark/
+│   ├── core/               # runner, interventions, hooks, metrics
+│   ├── datasets/           # dataset loaders + BaseDataset
+│   ├── methods/            # steering methods + base interface
+│   ├── models/             # model adapter implementations
+│   ├── cli.py              # CLI entrypoint
+│   ├── report.py
+│   └── compare.py
+├── tests/
+├── results/
+├── requirements.txt
+└── pyproject.toml
 ```
 
-## Environment
-This benchmark expects the conda/venv at:
+## Installation
+
+### Prerequisites
+
+- Python `>=3.10`
+- `git`
+- CUDA-capable GPU for large-model runs (optional for smoke tests)
+- Hugging Face access token for gated models (for example Llama 2/3), exported as `HF_TOKEN` or `HUGGINGFACE_HUB_TOKEN`
+
+### Option A: Editable Install (recommended)
+
+```bash
+git clone https://github.com/arshandalili/steering-benchmark.git
+cd steering-benchmark
+
+python -m venv .venv
+source .venv/bin/activate
+
+pip install --upgrade pip
+pip install -e .
 ```
+
+Optional extras:
+
+```bash
+pip install -e ".[dev]"      # pytest and dev deps
+pip install -e ".[sae]"      # sae-lens + safetensors
+```
+
+### Option B: requirements.txt
+
+```bash
+pip install -r requirements.txt
+```
+
+### Environment and Cache
+
+The helper scripts set these automatically:
+
+```bash
+export HF_HOME=data/hf_home
+export TRANSFORMERS_CACHE=data/hf_home/transformers
+export HF_DATASETS_CACHE=data/hf_home/datasets
+```
+
+If you use `scripts/activate_env.sh`, note it currently expects a shared env path:
+
+```text
 /data/arshan/hallucination/steering_benchmark/.venv
 ```
-Activate it with:
-```
-source steering_benchmark/scripts/activate_env.sh
-```
-If your default HuggingFace cache is quota-limited, set:
-```
-export HF_HOME=/data/arshan/hallucination/steering_benchmark/.cache/huggingface
-export HF_DATASETS_CACHE=$HF_HOME/datasets
-```
 
-## Running
-```
-steering_benchmark/scripts/run_benchmark.sh steering_benchmark/configs/experiments/diffmean_tinygpt2_nqswap_context.yaml
-steering_benchmark/scripts/run_benchmark.sh steering_benchmark/configs/experiments/diffmean_tinygpt2_nqswap_param.yaml
-steering_benchmark/scripts/run_benchmark.sh steering_benchmark/configs/experiments/actadd_tinygpt2_nqswap_context.yaml
-steering_benchmark/scripts/run_benchmark.sh steering_benchmark/configs/experiments/actadd_tinygpt2_nqswap_param.yaml
+Adjust that file or activate your environment manually if your setup differs.
+
+## Quick Start
+
+### 1) Run smoke test
+
+```bash
+scripts/run_smoke_test.sh
 ```
 
-## Dataset format
-The default loader (`jsonl_template`) expects JSONL with fields like:
+This runs `configs/experiments/smoke_tinygpt2.yaml` and writes JSON results to `results/`.
+
+### 2) Run any experiment
+
+```bash
+scripts/run_benchmark.sh configs/experiments/diffmean_tinygpt2_nqswap_context.yaml
 ```
-{"question": "...", "context": "...", "answer_context": "...", "answer_param": "..."}
+
+Or directly with Python:
+
+```bash
+python -m steering_benchmark \
+  --experiment configs/experiments/diffmean_tinygpt2_nqswap_context.yaml \
+  --registry-dir configs/registry \
+  --output-dir results
 ```
-Prompts are created from templates in `configs/registry/datasets.yaml`. Override the field mapping or templates per dataset if needed.
 
-### NQ-Swap (HuggingFace)
-The `nq_swap_hf`, `nq_swap_openbook`, and `nq_swap_closebook` dataset loaders pull from `pminervini/NQ-Swap` via 🤗 Datasets. They use:
-- `sub_context` + `sub_answer` for **context** targets
-- `org_answer` for **parametric** targets
+## How Experiments Work
 
-Evaluation uses the same prompt (with swapped `sub_context`) and reports metrics for both targets:
-`exact_match` (context) and `exact_match_param` (parametric).
-For SAE-aligned reproduction (same prompt format and no train/eval/test split), use:
-- `nq_swap_openbook_sae` or `nq_swap_closebook_sae` (shared splits, no shuffling)
-- `run.eval.answer_extraction: first_line` to match the paper's `split("\n")[0]` post-processing.
-For open-ended generations, `run.eval.answer_extraction: auto` strips common prefixes and
-evaluates the first line/sentence before exact-match scoring.
+Each experiment YAML declares:
 
-## AxBench-style factor selection
-AxBench selects the best steering **factor** on an evaluation split, then reports results on a held-out test split. Our runner follows this pattern by sweeping `run.factors`, selecting the best factor via `run.factor_selection.metric`, and evaluating the selected factor on `eval.test_split`.
+- `model`: key in `configs/registry/models.yaml`
+- `dataset`: key in `configs/registry/datasets.yaml`
+- `method`: key in `configs/registry/methods.yaml`
+- optional `*_overrides` for per-run customization
+- `run` block for train/eval/test behavior
 
-## Steering methods
-### DiffMean
-Computes the difference between mean hidden states from two groups and adds the resulting direction during generation.
+Minimal example:
 
-### ActAdd (Activation Addition)
-Computes a steering direction from paired positive/negative prompts and adds the direction at a chosen layer/token position.
-
-### Prompt baseline
-Adds a natural-language instruction before the prompt (e.g., “use the provided context” or “ignore context and answer from parametric knowledge”).
-
-### SpARE (SAE-based)
-Uses a sparse autoencoder (SAE) to compute the feature-space difference between two groups, selects top features, and decodes the resulting direction back into hidden space.
-
-The SAE weights file should contain:
-- `encoder_weight` (features x hidden)
-- `decoder_weight` (hidden x features)
-- optional `encoder_bias`, `decoder_bias`
-
-You can point to the weights via `configs/registry/methods.yaml` or override in the experiment config.
-
-## Comparing to expected results
-To compare your run against the expected SpARE values from the paper:
+```yaml
+name: smoke_tinygpt2_nqswap
+model: tiny_gpt2
+dataset: nq_swap_hf
+method: diffmean
+method_overrides:
+  layer: 1
+run:
+  eval:
+    group: context
+    metrics: ["exact_match"]
+    max_examples: 8
+  factors: [0.5, 1.0]
+  splits:
+    train: train
+    eval: eval
+    test: test
 ```
+
+Runner behavior:
+
+1. Fit steering method on train split.
+2. Evaluate baseline + each factor on eval split.
+3. Select best factor with `run.factor_selection.metric` (default: first metric).
+4. Report baseline and steered metrics on test split.
+5. Optionally compute sweeps and side-effect datasets.
+
+## Result Format
+
+Each run writes `results/<experiment_name>.json` with top-level keys:
+
+- `config`
+- `factor_selection`
+- `test`
+- `outputs`
+- `sweeps` (alias: `curves`)
+- `side_effects`
+- `cost`
+
+`test` contains:
+
+- `baseline`: metric summary without intervention
+- `steered`: metric summary with selected factor
+
+## Built-in Components
+
+### Models (registry keys)
+
+`llama2_7b`, `llama3_8b`, `gemma2_9b`, `mistral_7b_v01`, `gpt2`, `tiny_gpt2`
+
+### Datasets (registry keys)
+
+`nqswap`, `macnoise`, `nq_swap_hf`, `nq_swap_openbook`, `nq_swap_closebook`, `nq_swap_openbook_sae`, `nq_swap_closebook_sae`, `squad_v2`, `fever`, `qasper`, `beavertails`, `gyafc`, `sst2_tone`, `empathetic_tone`, `flores200_es`
+
+### Methods (registry keys)
+
+`diffmean`, `actadd`, `spare`, `spare_sasa`, `prompt_baseline`, `linear_probe`, `pca`, `lda`, `caa`, `composite`, `sae_variant`, `cad_decoding`, `dola_decoding`, `lora_finetune`, `reft`, `reps`, `hypersteer`
+
+## Data Formats
+
+### JSONL template datasets
+
+The `jsonl_template` loader expects rows like:
+
+```json
+{"question":"...","context":"...","answer_context":"...","answer_param":"..."}
+```
+
+Field mapping, prompt templates, and targets are configured in `configs/registry/datasets.yaml`.
+
+### NQ-Swap notes
+
+- Loader: `nq_swap`
+- Source: `pminervini/NQ-Swap` via Hugging Face Datasets
+- Supports context-vs-param targets, k-shot demonstrations, split policies, and answer extraction policies
+
+Useful eval option for strict QA matching:
+
+```yaml
+run:
+  eval:
+    answer_extraction: first_line
+```
+
+## Utilities
+
+### Generate summary tables
+
+```bash
+python -m steering_benchmark.report \
+  --results-dir results \
+  --metric exact_match \
+  --out results/report.json
+```
+
+### Compare against expected values
+
+```bash
 python -m steering_benchmark.compare \
   --results results/spare_llama2_nqswap.json \
-  --expected steering_benchmark/configs/expected/spare_emm_parametric.yaml \
+  --expected configs/expected/spare_emm_parametric.yaml \
   --dataset nqswap \
   --model llama2_7b \
-  --metric exact_match
+  --metric exact_match \
+  --tolerance 1.0
 ```
-Adjust tolerance as needed with `--tolerance`.
 
-To compare against the ActAdd baseline table values (reported for Llama3‑8B, Llama2‑7B, Gemma‑2‑9B):
+## Development
+
+Run tests:
+
+```bash
+pytest -q
 ```
-python -m steering_benchmark.compare \
-  --results results/actadd_tinygpt2_nqswap_param.json \
-  --expected steering_benchmark/configs/expected/actadd_emm_emc.yaml \
-  --dataset nqswap \
-  --model llama2_7b \
-  --metric EMM
-```
+
+Add a new component:
+
+1. Implement class under `steering_benchmark/models`, `steering_benchmark/datasets`, or `steering_benchmark/methods`.
+2. Register it with `@register_model`, `@register_dataset`, or `@register_method`.
+3. Add default config in the corresponding `configs/registry/*.yaml`.
+4. Reference it from a new experiment YAML in `configs/experiments/`.
+
+## Troubleshooting
+
+- `Unknown model/dataset/method`: check key names in `configs/registry/*.yaml`.
+- HF download/auth errors: set `HF_TOKEN` for gated repos and verify model access.
+- CUDA OOM: reduce `run.train.batch_size`, `run.eval.max_examples`, or generation length.
+- Slow first run: model and dataset downloads are cached under `data/hf_home/`.
