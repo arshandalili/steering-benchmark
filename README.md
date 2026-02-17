@@ -1,6 +1,6 @@
 # Steering Benchmark
 
-Config-driven benchmarking framework for activation steering in LLMs.
+Benchmarking framework for activation steering in LLMs.
 
 It separates **model adapters**, **dataset loaders**, and **steering methods** so you can run controlled comparisons without rewriting the training/evaluation loop.
 
@@ -8,7 +8,6 @@ It separates **model adapters**, **dataset loaders**, and **steering methods** s
 
 - Unified runner for steering methods that produce hidden-state interventions.
 - Registry-based components (`models`, `datasets`, `methods`) defined in YAML.
-- AxBench-style factor selection on eval split, then reporting on held-out test split.
 - Built-in support for sweeps (`factors`, `layers`, `prompt_variants`, `ood`) and side-effect evaluation.
 - Utilities for result aggregation (`report.py`) and expected-value checks (`compare.py`).
 
@@ -22,8 +21,7 @@ steering_benchmark/
 │   └── expected/           # Reference values for compare.py
 ├── scripts/
 │   ├── activate_env.sh
-│   ├── run_benchmark.sh
-│   └── run_smoke_test.sh
+│   └── run_benchmark.sh
 ├── steering_benchmark/
 │   ├── core/               # runner, interventions, hooks, metrics
 │   ├── datasets/           # dataset loaders + BaseDataset
@@ -43,16 +41,11 @@ steering_benchmark/
 ### Prerequisites
 
 - Python `>=3.10`
-- `git`
-- CUDA-capable GPU for large-model runs (optional for smoke tests)
 - Hugging Face access token for gated models (for example Llama 2/3), exported as `HF_TOKEN` or `HUGGINGFACE_HUB_TOKEN`
 
-### Option A: Editable Install (recommended)
+### Editable install
 
 ```bash
-git clone https://github.com/arshandalili/steering-benchmark.git
-cd steering-benchmark
-
 python -m venv .venv
 source .venv/bin/activate
 
@@ -60,17 +53,10 @@ pip install --upgrade pip
 pip install -e .
 ```
 
-Optional extras:
+Optional:
 
 ```bash
-pip install -e ".[dev]"      # pytest and dev deps
 pip install -e ".[sae]"      # sae-lens + safetensors
-```
-
-### Option B: requirements.txt
-
-```bash
-pip install -r requirements.txt
 ```
 
 ### Environment and Cache
@@ -93,15 +79,7 @@ Adjust that file or activate your environment manually if your setup differs.
 
 ## Quick Start
 
-### 1) Run smoke test
-
-```bash
-scripts/run_smoke_test.sh
-```
-
-This runs `configs/experiments/smoke_tinygpt2.yaml` and writes JSON results to `results/`.
-
-### 2) Run any experiment
+### Run any experiment
 
 ```bash
 scripts/run_benchmark.sh configs/experiments/diffmean_tinygpt2_nqswap_context.yaml
@@ -172,20 +150,6 @@ Each run writes `results/<experiment_name>.json` with top-level keys:
 - `baseline`: metric summary without intervention
 - `steered`: metric summary with selected factor
 
-## Built-in Components
-
-### Models (registry keys)
-
-`llama2_7b`, `llama3_8b`, `gemma2_9b`, `mistral_7b_v01`, `gpt2`, `tiny_gpt2`
-
-### Datasets (registry keys)
-
-`nqswap`, `macnoise`, `nq_swap_hf`, `nq_swap_openbook`, `nq_swap_closebook`, `nq_swap_openbook_sae`, `nq_swap_closebook_sae`, `squad_v2`, `fever`, `qasper`, `beavertails`, `gyafc`, `sst2_tone`, `empathetic_tone`, `flores200_es`
-
-### Methods (registry keys)
-
-`diffmean`, `actadd`, `spare`, `spare_sasa`, `prompt_baseline`, `linear_probe`, `pca`, `lda`, `caa`, `composite`, `sae_variant`, `cad_decoding`, `dola_decoding`, `lora_finetune`, `reft`, `reps`, `hypersteer`
-
 ## Data Formats
 
 ### JSONL template datasets
@@ -234,25 +198,3 @@ python -m steering_benchmark.compare \
   --metric exact_match \
   --tolerance 1.0
 ```
-
-## Development
-
-Run tests:
-
-```bash
-pytest -q
-```
-
-Add a new component:
-
-1. Implement class under `steering_benchmark/models`, `steering_benchmark/datasets`, or `steering_benchmark/methods`.
-2. Register it with `@register_model`, `@register_dataset`, or `@register_method`.
-3. Add default config in the corresponding `configs/registry/*.yaml`.
-4. Reference it from a new experiment YAML in `configs/experiments/`.
-
-## Troubleshooting
-
-- `Unknown model/dataset/method`: check key names in `configs/registry/*.yaml`.
-- HF download/auth errors: set `HF_TOKEN` for gated repos and verify model access.
-- CUDA OOM: reduce `run.train.batch_size`, `run.eval.max_examples`, or generation length.
-- Slow first run: model and dataset downloads are cached under `data/hf_home/`.
