@@ -1,0 +1,23 @@
+name: smoke_llama2_7b_nqswap
+model: llama2_7b
+dataset: nq_swap_hf
+method: diffmean
+run:
+  train:
+    max_examples: 16
+    batch_size: 4
+  eval:
+    group: context
+    metrics: ["exact_match"]
+    max_examples: 8
+    generation:
+      max_new_tokens: 16
+      do_sample: false
+      no_repeat_ngram_size: 2
+      repetition_penalty: 1.1
+      max_prompt_tokens: 1024
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors: [0.5, 1.0]

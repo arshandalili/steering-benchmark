@@ -1,0 +1,26 @@
+name: composite_tinygpt2_fever
+model: tiny_gpt2
+dataset: fever
+method: composite
+run:
+  train:
+    group_a: supports
+    group_b: refutes
+    max_examples: 128
+    batch_size: 8
+  eval:
+    group: supports
+    metrics:
+    - accuracy
+    max_examples: 64
+    generation:
+      max_new_tokens: 32
+      do_sample: false
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors:
+  - 0.5
+  - 1.0
+  - 2.0

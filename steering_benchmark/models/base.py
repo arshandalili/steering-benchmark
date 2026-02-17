@@ -23,6 +23,10 @@ class BaseModelAdapter:
     ) -> str:
         raise NotImplementedError
 
+    def loglikelihood(self, prompt: str, continuation: str) -> float:
+        """Optional negative log-likelihood proxy for side-effect metrics."""
+        raise NotImplementedError
+
     @property
     def device(self) -> torch.device:
         raise NotImplementedError

@@ -6,7 +6,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 import torch
 
-from steering_benchmark.core.intervention import InterventionPlan, InterventionSpec, VectorIntervention
+from steering_benchmark.core.intervention import InterventionPlan, InterventionSpec, VectorAddIntervention
 from steering_benchmark.methods.base import SteeringMethod
 from steering_benchmark.registry import register_method
 
@@ -117,12 +117,12 @@ class ActAddSteering(SteeringMethod):
                     specs = []
                     for layer in layers:
                         direction = torch.load(direction_path.format(layer=layer), map_location="cpu")
-                        intervention = VectorIntervention(direction=direction, scale=scale, token_position=token_position)
+                        intervention = VectorAddIntervention(direction=direction, scale=scale, token_position=token_position)
                         specs.append(InterventionSpec(layer=layer, intervention=intervention))
                     return specs[0] if len(specs) == 1 else InterventionPlan(specs=specs)
             elif Path(direction_path).exists():
                 direction = torch.load(direction_path, map_location="cpu")
-                intervention = VectorIntervention(direction=direction, scale=scale, token_position=token_position)
+                intervention = VectorAddIntervention(direction=direction, scale=scale, token_position=token_position)
                 return InterventionSpec(layer=layers[0], intervention=intervention)
 
         specs = []
@@ -141,7 +141,7 @@ class ActAddSteering(SteeringMethod):
             )
             if normalize:
                 direction = direction / (direction.norm() + 1e-6)
-            intervention = VectorIntervention(direction=direction, scale=scale, token_position=token_position)
+            intervention = VectorAddIntervention(direction=direction, scale=scale, token_position=token_position)
             specs.append(InterventionSpec(layer=layer, intervention=intervention))
 
         if direction_path and specs:

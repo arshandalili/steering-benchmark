@@ -1,0 +1,30 @@
+name: smoke_dola_tinygpt2_nqswap
+model: tiny_gpt2
+dataset: nq_swap_hf
+method: dola_decoding
+dataset_overrides:
+  max_rows: 50
+method_overrides:
+  alpha: 1.0
+  early_layer: 0
+  relative_top: 0.1
+  repetition_penalty: 1.0
+  post_softmax: true
+  strategy: fixed
+run:
+  seed: 42
+  splits:
+    train: train
+    eval: eval
+    test: test
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 5
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 8
+      do_sample: false

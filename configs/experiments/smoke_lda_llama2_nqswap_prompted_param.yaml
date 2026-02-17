@@ -1,0 +1,50 @@
+name: smoke_lda_llama2_nqswap_prompted_param
+model: llama2_7b
+dataset: nq_swap_hf
+method: lda
+model_overrides:
+  device_map: "auto"
+  dtype: "bfloat16"
+dataset_overrides:
+  cache_dir: ".hf_cache"
+  max_rows: 4096
+  k_shot: 3
+  demo_pool_size: 128
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: false
+  train_use_answer: false
+  train_include_param_context: false
+  context_template: "context: {context}\nquestion: {question}\nanswer:"
+  param_template: "question: {question}\nanswer:"
+method_overrides:
+  layers: [12, 13, 14, 15]
+  token_position: last
+  scale: 1.5
+  normalize: true
+run:
+  seed: 42
+  factors: [0.5, 1.0, 1.5, 2.0]
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_a: param
+    group_b: context
+    group_pos: param
+    group_neg: context
+    max_examples: 256
+    batch_size: 16
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 64
+    answer_extraction: first_line
+    metrics:
+      - exact_match
+    generation:
+      max_new_tokens: 4
+      do_sample: false
+      max_prompt_tokens: 2048

@@ -74,6 +74,11 @@ class HFModelAdapter(BaseModelAdapter):
         max_length = getattr(self.tokenizer, "model_max_length", None)
         if max_length is None or max_length > 100000:
             max_length = 2048
+        model_max = getattr(self.model.config, "max_position_embeddings", None)
+        if model_max is None:
+            model_max = getattr(self.model.config, "n_positions", None)
+        if model_max is not None:
+            max_length = min(max_length, int(model_max))
         inputs = self.tokenizer(
             prompts,
             return_tensors="pt",
@@ -98,6 +103,14 @@ class HFModelAdapter(BaseModelAdapter):
         max_length = max_prompt_tokens or getattr(self.tokenizer, "model_max_length", None)
         if max_length is None or max_length > 100000:
             max_length = 2048
+        model_max = getattr(self.model.config, "max_position_embeddings", None)
+        if model_max is None:
+            model_max = getattr(self.model.config, "n_positions", None)
+        if model_max is not None:
+            max_length = min(max_length, int(model_max))
+            max_new = gen_cfg.get("max_new_tokens")
+            if max_new is not None:
+                max_length = min(max_length, max(1, int(model_max) - int(max_new)))
         if self.tokenizer.eos_token_id is not None:
             gen_cfg.setdefault("pad_token_id", self.tokenizer.eos_token_id)
         inputs = self.tokenizer(
@@ -126,3 +139,20 @@ class HFModelAdapter(BaseModelAdapter):
         prompt_len = inputs["input_ids"].shape[1]
         generated = sequences[0][prompt_len:]
         return self.tokenizer.decode(generated, skip_special_tokens=True)
+
+    def loglikelihood(self, prompt: str, continuation: str) -> float:
+        text = prompt + continuation
+        inputs = self.tokenizer(text, return_tensors="pt").to(self.device)
+        prompt_ids = self.tokenizer(prompt, return_tensors="pt")["input_ids"]
+        prompt_len = prompt_ids.shape[1]
+        with torch.no_grad():
+            outputs = self.model(**inputs, return_dict=True)
+        logits = outputs.logits[:, :-1, :]
+        labels = inputs["input_ids"][:, 1:]
+        # Mask out prompt tokens
+        loss_mask = torch.zeros_like(labels, dtype=torch.float32)
+        loss_mask[:, prompt_len - 1 :] = 1.0
+        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+        token_log_probs = log_probs.gather(2, labels.unsqueeze(-1)).squeeze(-1)
+        nll = -(token_log_probs * loss_mask).sum() / loss_mask.sum().clamp_min(1.0)
+        return float(nll.detach().cpu().item())

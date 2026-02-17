@@ -1,0 +1,28 @@
+name: prompt_baseline_tinygpt2_empathetic_tone
+model: tiny_gpt2
+dataset: empathetic_tone
+method: prompt_baseline
+run:
+  train:
+    group_a: empathetic
+    group_b: blunt
+    max_examples: 128
+    batch_size: 8
+  eval:
+    group: empathetic
+    metrics:
+    - empathy_match
+    max_examples: 64
+    generation:
+      max_new_tokens: 32
+      do_sample: false
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors:
+  - 0.5
+  - 1.0
+  - 2.0
+method_overrides:
+  mode: auto

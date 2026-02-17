@@ -1,0 +1,28 @@
+name: prompt_baseline_tinygpt2_gyafc
+model: tiny_gpt2
+dataset: gyafc
+method: prompt_baseline
+run:
+  train:
+    group_a: formal
+    group_b: informal
+    max_examples: 128
+    batch_size: 8
+  eval:
+    group: formal
+    metrics:
+    - accuracy
+    max_examples: 64
+    generation:
+      max_new_tokens: 32
+      do_sample: false
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors:
+  - 0.5
+  - 1.0
+  - 2.0
+method_overrides:
+  mode: auto

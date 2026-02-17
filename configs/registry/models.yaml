@@ -22,6 +22,14 @@ gemma2_9b:
   trust_remote_code: false
   hook_module: model.layers.{layer}
 
+mistral_7b_v01:
+  type: hf
+  hf_id: mistralai/Mistral-7B-v0.1
+  dtype: bfloat16
+  device_map: auto
+  trust_remote_code: false
+  hook_module: model.layers.{layer}
+
 gpt2:
   type: hf
   hf_id: gpt2

@@ -62,5 +62,10 @@ def resolve_experiment(
         "method": method_cfg,
         "run": exp.get("run", {}),
         "output_dir": exp.get("output_dir", "results"),
+        "registry": {
+            "models": models,
+            "datasets": datasets,
+            "methods": methods,
+        },
     }
     return resolved

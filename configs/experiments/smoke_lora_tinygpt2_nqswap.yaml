@@ -1,0 +1,36 @@
+name: smoke_lora_tinygpt2_nqswap
+model: tiny_gpt2
+dataset: nq_swap_hf
+method: lora_finetune
+dataset_overrides:
+  max_rows: 50
+method_overrides:
+  lora:
+    r: 4
+    alpha: 8
+    dropout: 0.05
+    target_modules: ["c_attn"]
+run:
+  seed: 42
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_pos: context
+    max_examples: 20
+    batch_size: 2
+    max_steps: 5
+    lr: 0.0001
+    max_length: 128
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 5
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 8
+      do_sample: false

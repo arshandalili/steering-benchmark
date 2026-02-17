@@ -7,7 +7,7 @@ PROJECT_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/activate_env.sh"
 
-export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH:-}"
+export PYTHONPATH="${PROJECT_ROOT}/steering_benchmark:${PYTHONPATH:-}"
 export HF_HOME="${PROJECT_ROOT}/data/hf_home"
 export TRANSFORMERS_CACHE="${PROJECT_ROOT}/data/hf_home/transformers"
 export HF_DATASETS_CACHE="${PROJECT_ROOT}/data/hf_home/datasets"

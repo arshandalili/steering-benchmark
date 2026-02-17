@@ -1,0 +1,27 @@
+name: spare_tinygpt2_beavertails
+model: tiny_gpt2
+dataset: beavertails
+method: spare
+run:
+  train:
+    group_a: unsafe
+    group_b: safe
+    max_examples: 128
+    batch_size: 8
+  eval:
+    group: unsafe
+    metrics:
+    - refusal_match
+    - toxicity
+    max_examples: 64
+    generation:
+      max_new_tokens: 32
+      do_sample: false
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors:
+  - 0.5
+  - 1.0
+  - 2.0

@@ -1,0 +1,36 @@
+name: smoke_linear_probe_tinygpt2_nqswap
+model: tiny_gpt2
+dataset: nq_swap_hf
+method: linear_probe
+dataset_overrides:
+  max_rows: 50
+method_overrides:
+  layer: 0
+  token_position: last
+  scale: 1.0
+  normalize: true
+run:
+  seed: 42
+  factors: [1.0]
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_pos: context
+    group_neg: param
+    max_examples: 20
+    batch_size: 4
+    probe_c: 1.0
+    probe_max_iter: 200
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 10
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 8
+      do_sample: false

@@ -1,0 +1,23 @@
+[project]
+name = "steering-benchmark"
+version = "0.1.0"
+description = "Benchmarking framework for steering LLM hidden states"
+requires-python = ">=3.10"
+dependencies = [
+  "torch",
+  "transformers",
+  "datasets",
+  "pyyaml",
+  "numpy",
+  "accelerate",
+  "tqdm",
+  "scikit-learn",
+  "sacrebleu",
+  "rouge-score",
+  "langdetect",
+  "peft",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+sae = ["sae-lens", "safetensors"]

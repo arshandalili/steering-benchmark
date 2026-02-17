@@ -1,0 +1,35 @@
+name: spare_llama2_nqswap_param
+model: llama2_7b
+dataset: nq_swap_openbook_spare
+method: spare
+method_overrides:
+  layers: [12, 13, 14, 15]
+  scale: 1.2
+  target_behavior: param
+  sae:
+    mi_proportion: 0.06
+    use_confidence_weights: true
+run:
+  seed: 42
+  train:
+    group_a: param
+    group_b: context
+    max_examples: 512
+    batch_size: 8
+  eval:
+    group: context
+    max_examples: 200
+    answer_extraction: first_line
+    target_key: param
+    metrics:
+      - exact_match
+    generation:
+      max_new_tokens: 8
+      do_sample: false
+  grouping:
+    group: context
+    max_examples: 512
+    answer_extraction: first_line
+    generation:
+      max_new_tokens: 8
+      do_sample: false

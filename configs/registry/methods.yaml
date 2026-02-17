@@ -19,11 +19,129 @@ spare:
   scale: 2.0
   normalize: true
   sae:
-    weights_path: artifacts/sae/llama2_layer15_sae.pt
+    release: yuzhaouoe/Llama2-7b-SAE
+    sae_id: layers.{layer}
+    device: cuda
+    dtype: float32
     activation: relu
     topk_proportion: 0.07
+    use_confidence_weights: true
+
+spare_sasa:
+  name: spare_sasa
+  layer: 8
+  token_position: last
+  scale: 2.0
+  normalize: true
+  sae:
+    local_path: /data/arshan/hallucination/steering_benchmark/mistral_layer8_batchtopk_manifold_n4096_r8_k10
+    device: cuda
+    dtype: float32
+    topk_proportion: 0.07
+    mi_proportion: 0.06
+    use_confidence_weights: true
 
 prompt_baseline:
   name: prompt_baseline
   mode: context
   separator: "\n\n"
+
+linear_probe:
+  name: linear_probe
+  layer: 15
+  token_position: last
+  scale: 1.0
+  normalize: true
+
+pca:
+  name: pca
+  layer: 15
+  token_position: last
+  scale: 1.0
+  normalize: true
+
+lda:
+  name: lda
+  layer: 15
+  token_position: last
+  scale: 1.0
+  normalize: true
+
+caa:
+  name: caa
+  layer: 15
+  token_position: last
+  scale: 1.0
+  normalize: true
+
+composite:
+  name: composite
+  estimator:
+    type: diffmean
+  transform:
+    normalize: true
+  op:
+    type: add
+    scale: 1.0
+  schedule:
+    layers: [15]
+    token_position: last
+
+sae_variant:
+  name: sae_variant
+  layer: 15
+  token_position: last
+  scale: 2.0
+  normalize: true
+  sae:
+    weights_path: artifacts/sae/llama2_layer15_sae.pt
+    activation: relu
+  feature_selection:
+    topk: 128
+
+cad_decoding:
+  name: cad_decoding
+  alpha: 1.0
+  plausibility_alpha: 0.1
+  amateur_template: "{prompt}"
+
+dola_decoding:
+  name: dola_decoding
+  alpha: 1.0
+  early_layer: 4
+  relative_top: 0.1
+  repetition_penalty: 1.2
+  post_softmax: true
+
+lora_finetune:
+  name: lora_finetune
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.05
+
+reft:
+  name: reft
+  scale: 1.0
+  reft:
+    layer: 15
+    token_position: last
+
+reps:
+  name: reps
+  scale: 1.0
+  layer: 15
+  token_position: last
+  reps:
+    layer: 15
+    token_position: last
+
+hypersteer:
+  name: hypersteer
+  scale: 1.0
+  layer: 15
+  token_position: last
+  hypersteer:
+    behaviors: []
+    directions: []
+    target_behavior: ""

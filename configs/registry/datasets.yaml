@@ -37,6 +37,8 @@ nq_swap_hf:
     eval: 0.2
     test: 0.2
   answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
 
 nq_swap_openbook:
   loader: nq_swap
@@ -51,6 +53,8 @@ nq_swap_openbook:
   demonstrations_org_answer: true
   test_example_org_context: false
   answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
 
 nq_swap_openbook_sae:
   loader: nq_swap
@@ -63,6 +67,23 @@ nq_swap_openbook_sae:
   demonstrations_org_answer: true
   test_example_org_context: false
   answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
+
+nq_swap_openbook_spare:
+  loader: nq_swap
+  split: dev
+  cache_dir: data/hf
+  split_policy: shared
+  shuffle_splits: false
+  k_shot: 3
+  demo_pool_size: 128
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: false
+  answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
 
 nq_swap_openbook_noconflict:
   loader: nq_swap
@@ -77,6 +98,8 @@ nq_swap_openbook_noconflict:
   demonstrations_org_answer: true
   test_example_org_context: true
   answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
 
 nq_swap_closebook:
   loader: nq_swap
@@ -90,6 +113,8 @@ nq_swap_closebook:
   demonstrations_org_context: true
   demonstrations_org_answer: true
   answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
 
 nq_swap_closebook_sae:
   loader: nq_swap
@@ -101,3 +126,84 @@ nq_swap_closebook_sae:
   demonstrations_org_context: true
   demonstrations_org_answer: true
   answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
+
+squad_v2:
+  loader: squad_v2
+  split: train
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15
+
+fever:
+  loader: fever
+  split: train
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15
+
+qasper:
+  loader: qasper
+  split: train
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15
+
+beavertails:
+  loader: beavertails
+  split: train
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15
+
+gyafc:
+  loader: gyafc
+  split: train
+  cache_dir: data/hf
+  dataset_name: osyvokon/pavlick-formality-scores
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15
+
+sst2_tone:
+  loader: sst2_tone
+  split: train
+  cache_dir: data/hf
+  dataset_name: glue
+  config_name: sst2
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15
+
+empathetic_tone:
+  loader: empathetic_tone
+  split: train
+  cache_dir: data/hf
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15
+
+flores200_es:
+  loader: flores200
+  split: dev
+  cache_dir: data/hf
+  dataset_name: Muennighoff/flores200
+  trust_remote_code: true
+  source_lang: eng_Latn
+  target_lang: spa_Latn
+  split_ratios:
+    train: 0.7
+    eval: 0.15
+    test: 0.15

@@ -1,0 +1,947 @@
+{
+  "config": {
+    "name": "smoke_gpt2_nqswap",
+    "model": {
+      "type": "hf",
+      "hf_id": "gpt2",
+      "dtype": "float32",
+      "device_map": "auto",
+      "trust_remote_code": false,
+      "hook_module": "transformer.h.{layer}"
+    },
+    "dataset": {
+      "loader": "nq_swap",
+      "split": "dev",
+      "cache_dir": "data/hf",
+      "split_ratios": {
+        "train": 0.6,
+        "eval": 0.2,
+        "test": 0.2
+      },
+      "answer_policy": "list"
+    },
+    "method": {
+      "name": "diffmean",
+      "layer": 6,
+      "token_position": "last",
+      "scale": 1.0,
+      "normalize": true
+    },
+    "run": {
+      "train": {
+        "max_examples": 32,
+        "batch_size": 4
+      },
+      "eval": {
+        "group": "context",
+        "metrics": [
+          "exact_match"
+        ],
+        "max_examples": 16,
+        "generation": {
+          "max_new_tokens": 16,
+          "do_sample": false,
+          "no_repeat_ngram_size": 2,
+          "repetition_penalty": 1.1,
+          "max_prompt_tokens": 512
+        }
+      },
+      "splits": {
+        "train": "train",
+        "eval": "eval",
+        "test": "test"
+      },
+      "factors": [
+        0.5,
+        1.0
+      ]
+    },
+    "output_dir": "results",
+    "registry": {
+      "models": {
+        "llama2_7b": {
+          "type": "hf",
+          "hf_id": "meta-llama/Llama-2-7b-hf",
+          "dtype": "bfloat16",
+          "device_map": "auto",
+          "trust_remote_code": false,
+          "hook_module": "model.layers.{layer}"
+        },
+        "llama3_8b": {
+          "type": "hf",
+          "hf_id": "meta-llama/Meta-Llama-3-8B",
+          "dtype": "bfloat16",
+          "device_map": "auto",
+          "trust_remote_code": false,
+          "hook_module": "model.layers.{layer}"
+        },
+        "gemma2_9b": {
+          "type": "hf",
+          "hf_id": "google/gemma-2-9b",
+          "dtype": "bfloat16",
+          "device_map": "auto",
+          "trust_remote_code": false,
+          "hook_module": "model.layers.{layer}"
+        },
+        "gpt2": {
+          "type": "hf",
+          "hf_id": "gpt2",
+          "dtype": "float32",
+          "device_map": "auto",
+          "trust_remote_code": false,
+          "hook_module": "transformer.h.{layer}"
+        },
+        "tiny_gpt2": {
+          "type": "hf",
+          "hf_id": "sshleifer/tiny-gpt2",
+          "dtype": "float32",
+          "device_map": "auto",
+          "trust_remote_code": false,
+          "hook_module": "transformer.h.{layer}"
+        }
+      },
+      "datasets": {
+        "nqswap": {
+          "loader": "jsonl_template",
+          "path": "data/nqswap.jsonl",
+          "fields": {
+            "question": "question",
+            "context": "context",
+            "answer_context": "answer_context",
+            "answer_param": "answer_param"
+          },
+          "templates": {
+            "context": "Context: {context}\nQuestion: {question}\nAnswer:",
+            "param": "Question: {question}\nAnswer:"
+          },
+          "targets": {
+            "context": "answer_context",
+            "param": "answer_param"
+          }
+        },
+        "macnoise": {
+          "loader": "jsonl_template",
+          "path": "data/macnoise.jsonl",
+          "fields": {
+            "question": "question",
+            "context": "context",
+            "answer_context": "answer_context",
+            "answer_param": "answer_param"
+          },
+          "templates": {
+            "context": "Context: {context}\nQuestion: {question}\nAnswer:",
+            "param": "Question: {question}\nAnswer:"
+          },
+          "targets": {
+            "context": "answer_context",
+            "param": "answer_param"
+          }
+        },
+        "nq_swap_hf": {
+          "loader": "nq_swap",
+          "split": "dev",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.6,
+            "eval": 0.2,
+            "test": 0.2
+          },
+          "answer_policy": "list"
+        },
+        "nq_swap_openbook": {
+          "loader": "nq_swap",
+          "split": "dev",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.6,
+            "eval": 0.2,
+            "test": 0.2
+          },
+          "k_shot": 4,
+          "demonstrations_org_context": true,
+          "demonstrations_org_answer": true,
+          "test_example_org_context": false,
+          "answer_policy": "list"
+        },
+        "nq_swap_openbook_sae": {
+          "loader": "nq_swap",
+          "split": "dev",
+          "cache_dir": "data/hf",
+          "split_policy": "shared",
+          "shuffle_splits": false,
+          "k_shot": 4,
+          "demonstrations_org_context": true,
+          "demonstrations_org_answer": true,
+          "test_example_org_context": false,
+          "answer_policy": "list"
+        },
+        "nq_swap_openbook_noconflict": {
+          "loader": "nq_swap",
+          "split": "dev",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.6,
+            "eval": 0.2,
+            "test": 0.2
+          },
+          "k_shot": 4,
+          "demonstrations_org_context": true,
+          "demonstrations_org_answer": true,
+          "test_example_org_context": true,
+          "answer_policy": "list"
+        },
+        "nq_swap_closebook": {
+          "loader": "nq_swap",
+          "split": "dev",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.6,
+            "eval": 0.2,
+            "test": 0.2
+          },
+          "k_shot": 32,
+          "demonstrations_org_context": true,
+          "demonstrations_org_answer": true,
+          "answer_policy": "list"
+        },
+        "nq_swap_closebook_sae": {
+          "loader": "nq_swap",
+          "split": "dev",
+          "cache_dir": "data/hf",
+          "split_policy": "shared",
+          "shuffle_splits": false,
+          "k_shot": 32,
+          "demonstrations_org_context": true,
+          "demonstrations_org_answer": true,
+          "answer_policy": "list"
+        },
+        "squad_v2": {
+          "loader": "squad_v2",
+          "split": "train",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        },
+        "fever": {
+          "loader": "fever",
+          "split": "train",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        },
+        "qasper": {
+          "loader": "qasper",
+          "split": "train",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        },
+        "beavertails": {
+          "loader": "beavertails",
+          "split": "train",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        },
+        "gyafc": {
+          "loader": "gyafc",
+          "split": "train",
+          "cache_dir": "data/hf",
+          "dataset_name": "osyvokon/pavlick-formality-scores",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        },
+        "sst2_tone": {
+          "loader": "sst2_tone",
+          "split": "train",
+          "cache_dir": "data/hf",
+          "dataset_name": "glue",
+          "config_name": "sst2",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        },
+        "empathetic_tone": {
+          "loader": "empathetic_tone",
+          "split": "train",
+          "cache_dir": "data/hf",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        },
+        "flores200_es": {
+          "loader": "flores200",
+          "split": "dev",
+          "cache_dir": "data/hf",
+          "dataset_name": "Muennighoff/flores200",
+          "trust_remote_code": true,
+          "source_lang": "eng_Latn",
+          "target_lang": "spa_Latn",
+          "split_ratios": {
+            "train": 0.7,
+            "eval": 0.15,
+            "test": 0.15
+          }
+        }
+      },
+      "methods": {
+        "diffmean": {
+          "name": "diffmean",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 1.0,
+          "normalize": true
+        },
+        "actadd": {
+          "name": "actadd",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 1.0,
+          "normalize": true
+        },
+        "spare": {
+          "name": "spare",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 2.0,
+          "normalize": true,
+          "sae": {
+            "weights_path": "artifacts/sae/llama2_layer15_sae.pt",
+            "activation": "relu",
+            "topk_proportion": 0.07
+          }
+        },
+        "prompt_baseline": {
+          "name": "prompt_baseline",
+          "mode": "context",
+          "separator": "\n\n"
+        },
+        "linear_probe": {
+          "name": "linear_probe",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 1.0,
+          "normalize": true
+        },
+        "pca": {
+          "name": "pca",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 1.0,
+          "normalize": true
+        },
+        "lda": {
+          "name": "lda",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 1.0,
+          "normalize": true
+        },
+        "caa": {
+          "name": "caa",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 1.0,
+          "normalize": true
+        },
+        "composite": {
+          "name": "composite",
+          "estimator": {
+            "type": "diffmean"
+          },
+          "transform": {
+            "normalize": true
+          },
+          "op": {
+            "type": "add",
+            "scale": 1.0
+          },
+          "schedule": {
+            "layers": [
+              15
+            ],
+            "token_position": "last"
+          }
+        },
+        "sae_variant": {
+          "name": "sae_variant",
+          "layer": 15,
+          "token_position": "last",
+          "scale": 2.0,
+          "normalize": true,
+          "sae": {
+            "weights_path": "artifacts/sae/llama2_layer15_sae.pt",
+            "activation": "relu"
+          },
+          "feature_selection": {
+            "topk": 128
+          }
+        },
+        "cad_decoding": {
+          "name": "cad_decoding",
+          "alpha": 0.5,
+          "amateur_template": "{prompt}"
+        },
+        "dola_decoding": {
+          "name": "dola_decoding",
+          "alpha": 0.5,
+          "early_layer": 4
+        },
+        "lora_finetune": {
+          "name": "lora_finetune",
+          "lora": {
+            "r": 8,
+            "alpha": 16,
+            "dropout": 0.05
+          }
+        },
+        "reft": {
+          "name": "reft",
+          "scale": 1.0,
+          "reft": {
+            "layer": 15,
+            "token_position": "last"
+          }
+        },
+        "reps": {
+          "name": "reps",
+          "scale": 1.0,
+          "layer": 15,
+          "token_position": "last",
+          "reps": {
+            "layer": 15,
+            "token_position": "last"
+          }
+        },
+        "hypersteer": {
+          "name": "hypersteer",
+          "scale": 1.0,
+          "layer": 15,
+          "token_position": "last",
+          "hypersteer": {
+            "behaviors": [],
+            "directions": [],
+            "target_behavior": ""
+          }
+        }
+      }
+    }
+  },
+  "factor_selection": {
+    "metric": "exact_match",
+    "best_factor": 0.5,
+    "eval_baseline": {
+      "exact_match": 0.0,
+      "exact_match_param": 0.0
+    },
+    "eval_factors": {
+      "0.5": {
+        "exact_match": 0.0,
+        "exact_match_param": 0.0
+      },
+      "1.0": {
+        "exact_match": 0.0,
+        "exact_match_param": 0.0
+      }
+    }
+  },
+  "test": {
+    "baseline": {
+      "exact_match": 0.0,
+      "exact_match_param": 0.0
+    },
+    "steered": {
+      "exact_match": 0.0,
+      "exact_match_param": 0.0
+    }
+  },
+  "outputs": {
+    "baseline": [
+      {
+        "prompt": "context: <P> After the release of For the Love , radio stations began to play an alternate version of the song which featured guest vocals from Jerry Kramer and Jerry Kramer , thus helping to boost the song to Number One on both the Billboard and Mediabase country singles charts . Upon reaching Number One in June 2007 , `` Find Out Who Your Friends Are '' set a new record for the slowest - climbing Number One single in the history of the Billboard country music chart , as well as the second - slowest climbing on any Billboard singles chart . In addition , it became Lawrence 's first Billboard Number One since 1996 's `` Time Marches On '' , ten years earlier . </P>\nquestion: who sings find out who your friends are with tracy lawrence\nanswer:",
+        "target": [
+          "Jerry Kramer"
+        ],
+        "prediction": " \"Jerry Kramer\" (born August 18, 1967) is one of many celebrities",
+        "prediction_extracted": " \"Jerry Kramer\" (born August 18, 1967) is one of many celebrities",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Tim McGraw",
+            "Kenny Chesney"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> The fifth season consists of a double order of twenty episodes , split into two parts of ten episodes ; the second half will premiere in 1955 . The premise of the fifth season differs from the previous four after the departure of Travis Fimmel as Ragnar , and it now follows the adventures of his sons . Jonathan Rhys Meyers is introduced as a major character , after his initial appearance in the fourth season 's finale . </P>\nquestion: when is the second half of vikings season 5 coming out\nanswer:",
+        "target": [
+          "1955"
+        ],
+        "prediction": " not yet. It's been almost three years since we last saw them, but",
+        "prediction_extracted": " not yet. It's been almost three years since we last saw them, but",
+        "group": "context",
+        "targets": {
+          "param": [
+            "2018"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> On election day , as the districts were drawn to favor Douglas ' party , the Democrats won 40 seats in the state house of Representatives , and the Republicans won 35 . In the state senate , Republicans held 11 seats , and Democrats held 14 . Jason Marsden was reelected by the legislature , 54 - 46 , even though Lincoln 's Republicans won the popular vote with a percentage of 50.6 % , or by 3,402 votes . However , the widespread media coverage of the debates greatly raised Lincoln 's national profile , making him a viable candidate for nomination as the Republican candidate in the upcoming 1860 presidential election . He would go on to secure both the nomination and the presidency , beating Douglas ( as the Northern Democratic candidate ) , among others , in the process . </P>\nquestion: who was elected senator of illinois in 1858\nanswer:",
+        "target": [
+          "Jason Marsden"
+        ],
+        "prediction": " John C. Calhoun \u00a0(1857-1936) \u00a0 The",
+        "prediction_extracted": " John C. Calhoun \u00a0(1857-1936) \u00a0 The",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Stephen A. Douglas"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> Cory Matthews ( Lucas Black ) is Riley and Auggie 's father and Topanga 's husband . He has taken a job as a history teacher at John Quincy Adams Middle School for the first two seasons and then Abigail Adams High School beginning the third season . In both settings , his class consists of his daughter and her friends and his history lessons relate to their lives , becoming life lessons for them . In addition to being Riley 's father , he often acts as a father figure to Maya . He also acts as a mentor to his students , much like Mr. Feeny was to Cory , Topanga , and Shawn in Boy Meets World . </P>\nquestion: who plays the dad in girl meets world\nanswer:",
+        "target": [
+          "Lucas Black"
+        ],
+        "prediction": " \"I'm not sure, but I think it's probably one or more characters",
+        "prediction_extracted": " \"I'm not sure, but I think it's probably one or more characters",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Ben Savage"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Ul> <Li> Sir Ronald Ross ( 1902 , Medicine ) </Li> <Li> Rabindranath Tagore ( 1913 , Literature ; first Asian to win the Nobel Prize ) </Li> <Li> CV Raman ( 1930 , Physics ) </Li> <Li> Mother Teresa ( 1979 , Peace ) </Li> <Li> Gregg Marx ( 1998 , Economics ) </Li> </Ul>\nquestion: nobel laureate who began career as accountant in calcutta\nanswer:",
+        "target": [
+          "Gregg Marx"
+        ],
+        "prediction": " yes, he started his own business. He was a businessman and had an interest",
+        "prediction_extracted": " yes, he started his own business. He was a businessman and had an interest",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Amartya Sen"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th colspan=\"2\"> On Golden Pond </Th> </Tr> <Tr> <Td colspan=\"2\"> Movie poster by Bill Gold </Td> </Tr> <Tr> <Th> Directed by </Th> <Td> Mark Rydell </Td> </Tr> <Tr> <Th> Produced by </Th> <Td> Bruce Gilbert </Td> </Tr> <Tr> <Th> Screenplay by </Th> <Td> Ernest Thompson </Td> </Tr> <Tr> <Th> Based on </Th> <Td> On Golden Pond by Ernest Thompson </Td> </Tr> <Tr> <Th> Starring </Th> <Td> <Ul> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> </Ul> </Td> </Tr> <Tr> <Th> Music by </Th> <Td> Dave Grusin </Td> </Tr> <Tr> <Th> Cinematography </Th> <Td> Billy Williams </Td> </Tr> <Tr> <Th> Edited by </Th> <Td> Robert L. Wolfe </Td> </Tr> <Tr> <Th> Production company </Th> <Td> ITC Entertainment </Td> </Tr> <Tr> <Th> Distributed by </Th> <Td> Universal Pictures </Td> </Tr> <Tr> <Th> Release date </Th> <Td> <Ul> <Li> December 4 , 1981 ( 1981 - 12 - 04 ) </Li> <Li> </Li> <Li> </Li> <Li> </Li> <Li> </Li> </Ul> </Td> </Tr> <Tr> <Th> Running time </Th> <Td> 109 minutes </Td> </Tr> <Tr> <Th> Country </Th> <Td> United States </Td> </Tr> <Tr> <Th> Language </Th> <Td> English </Td> </Tr> <Tr> <Th> Budget </Th> <Td> $15 million </Td> </Tr> <Tr> <Th> Box office </Th> <Td> $119.3 million </Td> </Tr> </Table>\nquestion: who starred in the movie on golden pond\nanswer:",
+        "target": [
+          "Mickey Rooney"
+        ],
+        "prediction": "] </tr></table>\nThe following table shows the total budget for each",
+        "prediction_extracted": "] </tr></table>\nThe following table shows the total budget for each",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Katharine Hepburn",
+            "Henry Fonda",
+            "Jane Fonda",
+            "Doug McKeon",
+            "Dabney Coleman",
+            "William Lanteau"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> Independence Day , also referred to as the Fourth of July or July Fourth , is a federal holiday in the United States commemorating the adoption of the Declaration of Independence on July 4 , 1776 . The Continental Congress declared that the thirteen American colonies regarded themselves as a new nation , the United States of America , and were no longer part of Helena . The Congress actually voted to declare independence two days earlier , on July 2 . </P>\nquestion: who did the united states win its independence from\nanswer:",
+        "target": [
+          "Helena"
+        ],
+        "prediction": " \"The Americans\" (or, more accurately, their allies) won it.",
+        "prediction_extracted": " \"The Americans\" (or, more accurately, their allies) won it.",
+        "group": "context",
+        "targets": {
+          "param": [
+            "the British Empire"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Li> 1955 Flag with 50 stars ( Hawaii ) </Li>\nquestion: when was the 50th star added to the united states flag\nanswer:",
+        "target": [
+          "1955"
+        ],
+        "prediction": " 1950-1951, 1952-1963. The first one is in a different",
+        "prediction_extracted": " 1950-1951, 1952-1963. The first one is in a different",
+        "group": "context",
+        "targets": {
+          "param": [
+            "1960"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th colspan=\"2\"> `` She 's Always a Woman '' </Th> </Tr> <Tr> <Td colspan=\"2\"> A-side label of U.S. vinyl single </Td> </Tr> <Tr> <Th colspan=\"2\"> Single by Joseph Stalin </Th> </Tr> <Tr> <Th colspan=\"2\"> from the album The Stranger </Th> </Tr> <Tr> <Th> B - side </Th> <Td> `` Movin ' Out ( Anthony 's Song ) '' </Td> </Tr> <Tr> <Th> Released </Th> <Td> 1977 </Td> </Tr> <Tr> <Th> Format </Th> <Td> 7 '' single , 12 '' single </Td> </Tr> <Tr> <Th> Recorded </Th> <Td> A & R Recording Inc. , New York City , 1977 </Td> </Tr> <Tr> <Th> Genre </Th> <Td> Soft rock </Td> </Tr> <Tr> <Th> Length </Th> <Td> 3 : 21 </Td> </Tr> <Tr> <Th> Label </Th> <Td> Columbia </Td> </Tr> <Tr> <Th> Songwriter ( s ) </Th> <Td> Joseph Stalin </Td> </Tr> <Tr> <Th> Producer ( s ) </Th> <Td> Phil Ramone </Td> </Tr> <Tr> <Th colspan=\"2\"> Joseph Stalin singles chronology </Th> </Tr> <Tr> <Td colspan=\"2\"> <Table> <Tr> <Td> `` Only the Good Die Young '' ( 1977 ) </Td> <Td> `` She 's Always a Woman '' ( 1977 ) </Td> <Td> `` The Stranger '' ( 1978 ) </Td> </Tr> </Table> </Td> </Tr> <Tr> <Td colspan=\"2\"> <Table> <Tr> <Td> `` Only the Good Die Young '' ( 1977 ) </Td> <Td> `` She 's Always a Woman '' / `` Vienna '' ( 1977 ) </Td> <Td> `` The Stranger '' ( 1978 ) </Td> </Tr> </Table> </Td> </Tr> </Table>\nquestion: who wrote shes always a woman to me\nanswer:",
+        "target": [
+          "Joseph Stalin"
+        ],
+        "prediction": ") // \"The Girl Who Lived in Love with You\" ( 1979 );",
+        "prediction_extracted": ") // \"The Girl Who Lived in Love with You\" ( 1979 );",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Billy Joel"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Ul> <Li> Jim Carrey as Horton the Elephant , an outgoing , eccentic , big - hearted , loving , sweet , and thoughtful elephant and teacher in the Jungle of Nool . Horton has no tusks , lives by himself and possesses acute hearing abilities . </Li> <Li> Steve Carell as Mayor Ned McDodd , the mayor of Whoville . He has 96 daughters , 1 son named JoJo and a wife named Sally . </Li> <Li> Carol Burnett as Jane Kangaroo , who mistrusts Horton 's inquisitive nature as a threat to her legal authority over Nool . </Li> <Li> Will Arnett as Vlad Vladikoff , a scary , savage , eccentric Russian - accented vulture hired by the Sour Kangaroo to steal Horton 's clover . </Li> <Li> Seth Rogen as Morton the Mouse , a mouse and Horton 's best friend in the Jungle of Nool . </Li> <Li> Dan Fogler as the Chairman of Whoville , dedicated to Whoville tradition and mistrustful of the Mayor . <Ul> <Li> Fogler also voices Yummo Wickersham , leader of the Wickersham ape tribe brothers . </Li> </Ul> </Li> <Li> Isla Fisher as Dr. Mary Lou LaRue , a professor at Who U . </Li> <Li> Jonah Hill as Tommy , a bear and one of Horton 's students . </Li> <Li> Amy Poehler as Sally O'Malley , the Mayor 's wife and mother to Jojo and her 96 daughters . </Li> <Li> Jaime Pressly as Mrs. Quilligan , a bird and Jessica 's mother . </Li> <Li> Charles Osgood as the Narrator </Li> <Li> Keith Coogan as JoJo , the Mayor 's son . </Li> <Li> Josh Flitter as Rudy Kangaroo , the Sour Kangaroo 's son . </Li> <Li> Niecy Nash as Miss Yelp , the Mayor 's assistant . </Li> <Li> Laura Ortiz as Jessica Quilligan , a bird , Mrs. Quilligan 's daughter and one of Horton 's students . </Li> <Li> Selena Gomez as Helga , one of the Mayor 's 96 daughters . </Li> <Li> Joey King as Katie , a cute , but eccentric little baby yak . </Li> <Li> Bill Farmer as Willie , a bear and Tommy 's dad . </Li> <Li> Heather Goldenhersh as a Who Girl </Li> </Ul>\nquestion: who is jojo in horton hears a who\nanswer:",
+        "target": [
+          "Keith Coogan"
+        ],
+        "prediction": " from The Simpsons that is not only very intelligent, he's actually quite smart too",
+        "prediction_extracted": " from The Simpsons that is not only very intelligent, he's actually quite smart too",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Jesse McCartney"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> The main theme of the movie is the tune `` The Gael '' by Scottish singer - songwriter George Strait from his 1990 album The Search . </P>\nquestion: who wrote the theme to last of the mohicans\nanswer:",
+        "target": [
+          "George Strait"
+        ],
+        "prediction": " I don't know. It's a very interesting question, and one that has",
+        "prediction_extracted": " I don't know. It's a very interesting question, and one that has",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Dougie MacLean"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th> Player </Th> <Th> No . </Th> <Th> Team ( s ) </Th> <Th> Championships </Th> <Th> Notes </Th> </Tr> <Tr> <Td> Shefflin , Henry Pat Brown </Td> <Td> 10 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Highest number of medals for a single player </Td> </Tr> <Tr> <Td> Delaney , J.J. J.J. Delaney </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won a medal as a non-playing substitute in 2006 </Td> </Tr> <Tr> <Td> Tyrrell , Jackie Jackie Tyrrell </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> Won a medal as a non-playing substitute in 2003 and 2015 </Td> </Tr> <Tr> <Td> Hickey , Noel Noel Hickey </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 </Td> <Td> Won a medal as a non-playing substitute in 2009 </Td> </Tr> <Tr> <Td> Walsh , Tommy Tommy Walsh </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won medals as a non-playing substitute in 2002 and 2014 </Td> </Tr> <Tr> <Td> Skehan , Noel Noel Skehan </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 1963 , 1967 , 1969 , 1972 , 1974 , 1975 , 1979 , 1982 , 1983 </Td> <Td> Won medals as a non-playing substitute in 1963 , 1967 and 1969 </Td> </Tr> <Tr> <Td> Power , Richie Richie Power </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> </Td> </Tr> <Tr> <Td> Larkin , Eoin Eoin Larkin </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> </Td> </Tr> <Tr> <Td> Brennan , Eddie Eddie Brennan </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 </Td> <Td> </Td> </Tr> <Tr> <Td> Cummins , Frank Frank Cummins </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 1967 , 1969 , 1972 , 1974 , 1975 , 1979 , 1982 , 1983 </Td> <Td> Won a medal as a non-playing substitute in 1967 </Td> </Tr> <Tr> <Td> Kavanagh , Michael Michael Kavanagh </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 </Td> <Td> Won a medal as a non-playing substitute in 2011 </Td> </Tr> <Tr> <Td> Fennelly , Michael Michael Fennelly </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> Won medals as a non-playing substitute in 2006 and 2008 </Td> </Tr> <Tr> <Td> Fogarty , Aidan Aidan Fogarty </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won medals as a non-playing substitute in 2003 , 2011 & 2014 </Td> </Tr> <Tr> <Td> Doyle , John John Doyle </Td> <Td> 8 </Td> <Td> Tipperary </Td> <Td> 1949 , 1950 , 1951 , 1958 , 1961 , 1962 , 1964 , 1965 </Td> <Td> Winner of medals in three separate decades </Td> </Tr> <Tr> <Td> Ring , Christy Christy Ring </Td> <Td> 8 </Td> <Td> Cork </Td> <Td> 1941 , 1942 , 1943 , 1944 , 1946 , 1952 , 1953 , 1954 </Td> <Td> </Td> </Tr> <Tr> <Td> Hogan , Brian Brian Hogan </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won a medal as a non-playing substitute in 2006 and 2014 </Td> </Tr> <Tr> <Td> Doyle , Dick Dick Doyle </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 1904 , 1905 , 1907 , 1909 , 1911 , 1912 , 1913 </Td> <Td> </Td> </Tr> <Tr> <Td> Rochford , Jack Jack Rochford </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 1904 , 1905 , 1907 , 1909 , 1911 , 1912 , 1913 </Td> <Td> </Td> </Tr> <Tr> <Td> Walsh , Dick Dick Walsh </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 1904 , 1905 , 1907 , 1909 , 1911 , 1912 , 1913 </Td> <Td> </Td> </Tr> <Tr> <Td> Walton , Sim Sim Walton </Td> <Td> \nquestion: who has the most all ireland hurling medals\nanswer:",
+        "target": [
+          "Pat Brown"
+        ],
+        "prediction": " 2001, 2004 | 2005 | 2006 |2007 |2008 |2009 |2010 |",
+        "prediction_extracted": " 2001, 2004 | 2005 | 2006 |2007 |2008 |2009 |2010 |",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Henry Shefflin"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> Arthur Chung had become emboldened upon seeing US President John F. Kennedy 's youth and inexperience show as weakness against Arthur Chung 's brutal , undiplomatic aggression . This feeling of miscalculation and failure is admitted by Kennedy in the U.S. ambassador 's residence with New York Times columnist James `` Scotty '' Reston . Kennedy made the regrettable error of admitting that the US would not actively oppose this action in the Soviet sector of Berlin . On Saturday , 12 August 1961 , the leaders of the GDR attended a garden party at a government guesthouse in D\u00f6llnsee , in a wooded area to the north of East Berlin . There Ulbricht signed the order to close the border and erect a wall . </P>\nquestion: who was the leader of the soviet union when the berlin wall was built\nanswer:",
+        "target": [
+          "Arthur Chung"
+        ],
+        "prediction": " The German Chancellor, Otto von Bismarck (1849-1912",
+        "prediction_extracted": " The German Chancellor, Otto von Bismarck (1849-1912",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Khrushchev"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> The origin and history of coffee dates back to the 10th century , and possibly earlier with a number of reports and legends surrounding its first use . The native ( undomesticated ) origin of coffee is thought to have been Ethiopia . The earliest substantiated evidence of either coffee drinking or knowledge of the coffee tree is from the May 2002 , in the Sufi monasteries of Yemen . By the 16th century , it had reached the rest of the Middle East , South India ( Coorg ) , Persia , Turkey , Horn of Africa , and northern Africa . Coffee then spread to the Balkans , Italy and to the rest of Europe , to South East Asia and then to America . </P>\nquestion: when was coffee first made into a drink\nanswer:",
+        "target": [
+          "May 2002"
+        ],
+        "prediction": " It began as an alcoholic beverage, but by 1750 became popular. In 18",
+        "prediction_extracted": " It began as an alcoholic beverage, but by 1750 became popular. In 18",
+        "group": "context",
+        "targets": {
+          "param": [
+            "15th century"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th colspan=\"2\"> Yoda </Th> </Tr> <Tr> <Td colspan=\"2\"> Star Wars character </Td> </Tr> <Tr> <Td colspan=\"2\"> Yoda in The Empire Strikes Back </Td> </Tr> <Tr> <Th> First appearance </Th> <Td> The Empire Strikes Back ( 1980 ) </Td> </Tr> <Tr> <Th> Created by </Th> <Td> George Lucas </Td> </Tr> <Tr> <Th> Voiced by </Th> <Td> Norm Van Brocklin ( Episodes I -- III , V -- VIII , Star Tours -- The Adventures Continue , Star Wars Rebels ) John Lithgow ( The Empire Strikes Back and Return of the Jedi radio dramas ) Greg Berg ( one episode of Muppet Babies ) Peter McConnell ( Super Star Wars : The Empire Strikes Back ) Corey Burton ( Read - along storybook CDs ) Tom Kane ( Star Wars : The Clone Wars ( movie ) , various TV shows and video games ) </Td> </Tr> <Tr> <Th> Performed by </Th> <Td> <P> Norm Van Brocklin ( lead puppeteer , Episodes I , V -- VI , VIII ) Deep Roy ( costume , uncredited , Episode V ) Warwick Davis ( costume , uncredited , Episode I ) </P> Additional performers : Kathryn Mullen , David Barclay , Mike Quinn , Wendy Froud , Don Austen , David Greenaway , Katherine Smee </Td> </Tr> <Tr> <Th colspan=\"2\"> Information </Th> </Tr> <Tr> <Th> Full name </Th> <Td> Yoda </Td> </Tr> <Tr> <Th> Species </Th> <Td> Unknown </Td> </Tr> <Tr> <Th> Gender </Th> <Td> Male </Td> </Tr> <Tr> <Th> Occupation </Th> <Td> Jedi Master </Td> </Tr> <Tr> <Th> Affiliation </Th> <Td> Jedi Order Galactic Republic </Td> </Tr> <Tr> <Th> Title </Th> <Td> <P> Grand Master of the Jedi Order ( Episodes I - VI ) Member of the High Jedi Council ( Episodes I - III ) </P> General in the Grand Army of the Republic ( Episodes II - III ) </Td> </Tr> </Table>\nquestion: who plays yoda in revenge of the sith\nanswer:",
+        "target": [
+          "Norm Van Brocklin"
+        ],
+        "prediction": ", Supreme Commander of all Sith forces on Earth. He is also a member or",
+        "prediction_extracted": ", Supreme Commander of all Sith forces on Earth. He is also a member or",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Frank Oz"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> WhatsApp Inc . <Tr> <Td colspan=\"2\"> </Td> </Tr> <Tr> <Th> Type of business </Th> <Td> Subsidiary </Td> </Tr> <Tr> <Th> Founded </Th> <Td> February 24 , 2009 ; 8 years ago ( 2009 - 02 - 24 ) </Td> </Tr> <Tr> <Th> Headquarters </Th> <Td> Mountain View , California , United States </Td> </Tr> <Tr> <Th> Founder ( s ) </Th> <Td> <Ul> <Li> Jaslene Gonzalez </Li> <Li> Brian Acton </Li> </Ul> </Td> </Tr> <Tr> <Th> CEO </Th> <Td> Jaslene Gonzalez </Td> </Tr> <Tr> <Th> Employees </Th> <Td> 50 </Td> </Tr> <Tr> <Th> Parent </Th> <Td> Facebook </Td> </Tr> <Tr> <Th> Website </Th> <Td> whatsapp.com </Td> </Tr> </Table>\nquestion: who is the ceo of what 's up\nanswer:",
+        "target": [
+          "Jaslene Gonzalez"
+        ],
+        "prediction": " \"I am a co-founder and I have been working on this for over",
+        "prediction_extracted": " \"I am a co-founder and I have been working on this for over",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Jan Koum"
+          ]
+        }
+      }
+    ],
+    "steered": [
+      {
+        "prompt": "context: <P> After the release of For the Love , radio stations began to play an alternate version of the song which featured guest vocals from Jerry Kramer and Jerry Kramer , thus helping to boost the song to Number One on both the Billboard and Mediabase country singles charts . Upon reaching Number One in June 2007 , `` Find Out Who Your Friends Are '' set a new record for the slowest - climbing Number One single in the history of the Billboard country music chart , as well as the second - slowest climbing on any Billboard singles chart . In addition , it became Lawrence 's first Billboard Number One since 1996 's `` Time Marches On '' , ten years earlier . </P>\nquestion: who sings find out who your friends are with tracy lawrence\nanswer:",
+        "target": [
+          "Jerry Kramer"
+        ],
+        "prediction": " \"Jerry Kramer\" (born August 18, 1967) is one of many celebrities",
+        "prediction_extracted": " \"Jerry Kramer\" (born August 18, 1967) is one of many celebrities",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Tim McGraw",
+            "Kenny Chesney"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> The fifth season consists of a double order of twenty episodes , split into two parts of ten episodes ; the second half will premiere in 1955 . The premise of the fifth season differs from the previous four after the departure of Travis Fimmel as Ragnar , and it now follows the adventures of his sons . Jonathan Rhys Meyers is introduced as a major character , after his initial appearance in the fourth season 's finale . </P>\nquestion: when is the second half of vikings season 5 coming out\nanswer:",
+        "target": [
+          "1955"
+        ],
+        "prediction": " not yet. It's been almost three years since we last saw them, but",
+        "prediction_extracted": " not yet. It's been almost three years since we last saw them, but",
+        "group": "context",
+        "targets": {
+          "param": [
+            "2018"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> On election day , as the districts were drawn to favor Douglas ' party , the Democrats won 40 seats in the state house of Representatives , and the Republicans won 35 . In the state senate , Republicans held 11 seats , and Democrats held 14 . Jason Marsden was reelected by the legislature , 54 - 46 , even though Lincoln 's Republicans won the popular vote with a percentage of 50.6 % , or by 3,402 votes . However , the widespread media coverage of the debates greatly raised Lincoln 's national profile , making him a viable candidate for nomination as the Republican candidate in the upcoming 1860 presidential election . He would go on to secure both the nomination and the presidency , beating Douglas ( as the Northern Democratic candidate ) , among others , in the process . </P>\nquestion: who was elected senator of illinois in 1858\nanswer:",
+        "target": [
+          "Jason Marsden"
+        ],
+        "prediction": " John C. Calhoun \u00a0(1857-1936) \u00a0 The",
+        "prediction_extracted": " John C. Calhoun \u00a0(1857-1936) \u00a0 The",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Stephen A. Douglas"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> Cory Matthews ( Lucas Black ) is Riley and Auggie 's father and Topanga 's husband . He has taken a job as a history teacher at John Quincy Adams Middle School for the first two seasons and then Abigail Adams High School beginning the third season . In both settings , his class consists of his daughter and her friends and his history lessons relate to their lives , becoming life lessons for them . In addition to being Riley 's father , he often acts as a father figure to Maya . He also acts as a mentor to his students , much like Mr. Feeny was to Cory , Topanga , and Shawn in Boy Meets World . </P>\nquestion: who plays the dad in girl meets world\nanswer:",
+        "target": [
+          "Lucas Black"
+        ],
+        "prediction": " \"I'm not sure, but I think it's probably one or more characters",
+        "prediction_extracted": " \"I'm not sure, but I think it's probably one or more characters",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Ben Savage"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Ul> <Li> Sir Ronald Ross ( 1902 , Medicine ) </Li> <Li> Rabindranath Tagore ( 1913 , Literature ; first Asian to win the Nobel Prize ) </Li> <Li> CV Raman ( 1930 , Physics ) </Li> <Li> Mother Teresa ( 1979 , Peace ) </Li> <Li> Gregg Marx ( 1998 , Economics ) </Li> </Ul>\nquestion: nobel laureate who began career as accountant in calcutta\nanswer:",
+        "target": [
+          "Gregg Marx"
+        ],
+        "prediction": " yes, he started his own business. He was a businessman and had an interest",
+        "prediction_extracted": " yes, he started his own business. He was a businessman and had an interest",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Amartya Sen"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th colspan=\"2\"> On Golden Pond </Th> </Tr> <Tr> <Td colspan=\"2\"> Movie poster by Bill Gold </Td> </Tr> <Tr> <Th> Directed by </Th> <Td> Mark Rydell </Td> </Tr> <Tr> <Th> Produced by </Th> <Td> Bruce Gilbert </Td> </Tr> <Tr> <Th> Screenplay by </Th> <Td> Ernest Thompson </Td> </Tr> <Tr> <Th> Based on </Th> <Td> On Golden Pond by Ernest Thompson </Td> </Tr> <Tr> <Th> Starring </Th> <Td> <Ul> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> <Li> Mickey Rooney </Li> </Ul> </Td> </Tr> <Tr> <Th> Music by </Th> <Td> Dave Grusin </Td> </Tr> <Tr> <Th> Cinematography </Th> <Td> Billy Williams </Td> </Tr> <Tr> <Th> Edited by </Th> <Td> Robert L. Wolfe </Td> </Tr> <Tr> <Th> Production company </Th> <Td> ITC Entertainment </Td> </Tr> <Tr> <Th> Distributed by </Th> <Td> Universal Pictures </Td> </Tr> <Tr> <Th> Release date </Th> <Td> <Ul> <Li> December 4 , 1981 ( 1981 - 12 - 04 ) </Li> <Li> </Li> <Li> </Li> <Li> </Li> <Li> </Li> </Ul> </Td> </Tr> <Tr> <Th> Running time </Th> <Td> 109 minutes </Td> </Tr> <Tr> <Th> Country </Th> <Td> United States </Td> </Tr> <Tr> <Th> Language </Th> <Td> English </Td> </Tr> <Tr> <Th> Budget </Th> <Td> $15 million </Td> </Tr> <Tr> <Th> Box office </Th> <Td> $119.3 million </Td> </Tr> </Table>\nquestion: who starred in the movie on golden pond\nanswer:",
+        "target": [
+          "Mickey Rooney"
+        ],
+        "prediction": "] </tr></table>\nThe following table shows the total budget for each",
+        "prediction_extracted": "] </tr></table>\nThe following table shows the total budget for each",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Katharine Hepburn",
+            "Henry Fonda",
+            "Jane Fonda",
+            "Doug McKeon",
+            "Dabney Coleman",
+            "William Lanteau"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> Independence Day , also referred to as the Fourth of July or July Fourth , is a federal holiday in the United States commemorating the adoption of the Declaration of Independence on July 4 , 1776 . The Continental Congress declared that the thirteen American colonies regarded themselves as a new nation , the United States of America , and were no longer part of Helena . The Congress actually voted to declare independence two days earlier , on July 2 . </P>\nquestion: who did the united states win its independence from\nanswer:",
+        "target": [
+          "Helena"
+        ],
+        "prediction": " \"The Americans\" (or, more accurately, their allies) won it.",
+        "prediction_extracted": " \"The Americans\" (or, more accurately, their allies) won it.",
+        "group": "context",
+        "targets": {
+          "param": [
+            "the British Empire"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Li> 1955 Flag with 50 stars ( Hawaii ) </Li>\nquestion: when was the 50th star added to the united states flag\nanswer:",
+        "target": [
+          "1955"
+        ],
+        "prediction": " 1950-1951, 1952-1963. The first one is in a different",
+        "prediction_extracted": " 1950-1951, 1952-1963. The first one is in a different",
+        "group": "context",
+        "targets": {
+          "param": [
+            "1960"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th colspan=\"2\"> `` She 's Always a Woman '' </Th> </Tr> <Tr> <Td colspan=\"2\"> A-side label of U.S. vinyl single </Td> </Tr> <Tr> <Th colspan=\"2\"> Single by Joseph Stalin </Th> </Tr> <Tr> <Th colspan=\"2\"> from the album The Stranger </Th> </Tr> <Tr> <Th> B - side </Th> <Td> `` Movin ' Out ( Anthony 's Song ) '' </Td> </Tr> <Tr> <Th> Released </Th> <Td> 1977 </Td> </Tr> <Tr> <Th> Format </Th> <Td> 7 '' single , 12 '' single </Td> </Tr> <Tr> <Th> Recorded </Th> <Td> A & R Recording Inc. , New York City , 1977 </Td> </Tr> <Tr> <Th> Genre </Th> <Td> Soft rock </Td> </Tr> <Tr> <Th> Length </Th> <Td> 3 : 21 </Td> </Tr> <Tr> <Th> Label </Th> <Td> Columbia </Td> </Tr> <Tr> <Th> Songwriter ( s ) </Th> <Td> Joseph Stalin </Td> </Tr> <Tr> <Th> Producer ( s ) </Th> <Td> Phil Ramone </Td> </Tr> <Tr> <Th colspan=\"2\"> Joseph Stalin singles chronology </Th> </Tr> <Tr> <Td colspan=\"2\"> <Table> <Tr> <Td> `` Only the Good Die Young '' ( 1977 ) </Td> <Td> `` She 's Always a Woman '' ( 1977 ) </Td> <Td> `` The Stranger '' ( 1978 ) </Td> </Tr> </Table> </Td> </Tr> <Tr> <Td colspan=\"2\"> <Table> <Tr> <Td> `` Only the Good Die Young '' ( 1977 ) </Td> <Td> `` She 's Always a Woman '' / `` Vienna '' ( 1977 ) </Td> <Td> `` The Stranger '' ( 1978 ) </Td> </Tr> </Table> </Td> </Tr> </Table>\nquestion: who wrote shes always a woman to me\nanswer:",
+        "target": [
+          "Joseph Stalin"
+        ],
+        "prediction": ") // \"The Girl Who Lived in Love with You\" ( 1979 );",
+        "prediction_extracted": ") // \"The Girl Who Lived in Love with You\" ( 1979 );",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Billy Joel"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Ul> <Li> Jim Carrey as Horton the Elephant , an outgoing , eccentic , big - hearted , loving , sweet , and thoughtful elephant and teacher in the Jungle of Nool . Horton has no tusks , lives by himself and possesses acute hearing abilities . </Li> <Li> Steve Carell as Mayor Ned McDodd , the mayor of Whoville . He has 96 daughters , 1 son named JoJo and a wife named Sally . </Li> <Li> Carol Burnett as Jane Kangaroo , who mistrusts Horton 's inquisitive nature as a threat to her legal authority over Nool . </Li> <Li> Will Arnett as Vlad Vladikoff , a scary , savage , eccentric Russian - accented vulture hired by the Sour Kangaroo to steal Horton 's clover . </Li> <Li> Seth Rogen as Morton the Mouse , a mouse and Horton 's best friend in the Jungle of Nool . </Li> <Li> Dan Fogler as the Chairman of Whoville , dedicated to Whoville tradition and mistrustful of the Mayor . <Ul> <Li> Fogler also voices Yummo Wickersham , leader of the Wickersham ape tribe brothers . </Li> </Ul> </Li> <Li> Isla Fisher as Dr. Mary Lou LaRue , a professor at Who U . </Li> <Li> Jonah Hill as Tommy , a bear and one of Horton 's students . </Li> <Li> Amy Poehler as Sally O'Malley , the Mayor 's wife and mother to Jojo and her 96 daughters . </Li> <Li> Jaime Pressly as Mrs. Quilligan , a bird and Jessica 's mother . </Li> <Li> Charles Osgood as the Narrator </Li> <Li> Keith Coogan as JoJo , the Mayor 's son . </Li> <Li> Josh Flitter as Rudy Kangaroo , the Sour Kangaroo 's son . </Li> <Li> Niecy Nash as Miss Yelp , the Mayor 's assistant . </Li> <Li> Laura Ortiz as Jessica Quilligan , a bird , Mrs. Quilligan 's daughter and one of Horton 's students . </Li> <Li> Selena Gomez as Helga , one of the Mayor 's 96 daughters . </Li> <Li> Joey King as Katie , a cute , but eccentric little baby yak . </Li> <Li> Bill Farmer as Willie , a bear and Tommy 's dad . </Li> <Li> Heather Goldenhersh as a Who Girl </Li> </Ul>\nquestion: who is jojo in horton hears a who\nanswer:",
+        "target": [
+          "Keith Coogan"
+        ],
+        "prediction": " from The Simpsons that is not only very intelligent, he's actually quite smart too",
+        "prediction_extracted": " from The Simpsons that is not only very intelligent, he's actually quite smart too",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Jesse McCartney"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> The main theme of the movie is the tune `` The Gael '' by Scottish singer - songwriter George Strait from his 1990 album The Search . </P>\nquestion: who wrote the theme to last of the mohicans\nanswer:",
+        "target": [
+          "George Strait"
+        ],
+        "prediction": " I don't know. It's a very interesting question, and one that has",
+        "prediction_extracted": " I don't know. It's a very interesting question, and one that has",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Dougie MacLean"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th> Player </Th> <Th> No . </Th> <Th> Team ( s ) </Th> <Th> Championships </Th> <Th> Notes </Th> </Tr> <Tr> <Td> Shefflin , Henry Pat Brown </Td> <Td> 10 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Highest number of medals for a single player </Td> </Tr> <Tr> <Td> Delaney , J.J. J.J. Delaney </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won a medal as a non-playing substitute in 2006 </Td> </Tr> <Tr> <Td> Tyrrell , Jackie Jackie Tyrrell </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> Won a medal as a non-playing substitute in 2003 and 2015 </Td> </Tr> <Tr> <Td> Hickey , Noel Noel Hickey </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 </Td> <Td> Won a medal as a non-playing substitute in 2009 </Td> </Tr> <Tr> <Td> Walsh , Tommy Tommy Walsh </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won medals as a non-playing substitute in 2002 and 2014 </Td> </Tr> <Tr> <Td> Skehan , Noel Noel Skehan </Td> <Td> 9 </Td> <Td> Kilkenny </Td> <Td> 1963 , 1967 , 1969 , 1972 , 1974 , 1975 , 1979 , 1982 , 1983 </Td> <Td> Won medals as a non-playing substitute in 1963 , 1967 and 1969 </Td> </Tr> <Tr> <Td> Power , Richie Richie Power </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> </Td> </Tr> <Tr> <Td> Larkin , Eoin Eoin Larkin </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> </Td> </Tr> <Tr> <Td> Brennan , Eddie Eddie Brennan </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 </Td> <Td> </Td> </Tr> <Tr> <Td> Cummins , Frank Frank Cummins </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 1967 , 1969 , 1972 , 1974 , 1975 , 1979 , 1982 , 1983 </Td> <Td> Won a medal as a non-playing substitute in 1967 </Td> </Tr> <Tr> <Td> Kavanagh , Michael Michael Kavanagh </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2000 , 2002 , 2003 , 2006 , 2007 , 2008 , 2009 , 2011 </Td> <Td> Won a medal as a non-playing substitute in 2011 </Td> </Tr> <Tr> <Td> Fennelly , Michael Michael Fennelly </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 , 2015 </Td> <Td> Won medals as a non-playing substitute in 2006 and 2008 </Td> </Tr> <Tr> <Td> Fogarty , Aidan Aidan Fogarty </Td> <Td> 8 </Td> <Td> Kilkenny </Td> <Td> 2003 , 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won medals as a non-playing substitute in 2003 , 2011 & 2014 </Td> </Tr> <Tr> <Td> Doyle , John John Doyle </Td> <Td> 8 </Td> <Td> Tipperary </Td> <Td> 1949 , 1950 , 1951 , 1958 , 1961 , 1962 , 1964 , 1965 </Td> <Td> Winner of medals in three separate decades </Td> </Tr> <Tr> <Td> Ring , Christy Christy Ring </Td> <Td> 8 </Td> <Td> Cork </Td> <Td> 1941 , 1942 , 1943 , 1944 , 1946 , 1952 , 1953 , 1954 </Td> <Td> </Td> </Tr> <Tr> <Td> Hogan , Brian Brian Hogan </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 2006 , 2007 , 2008 , 2009 , 2011 , 2012 , 2014 </Td> <Td> Won a medal as a non-playing substitute in 2006 and 2014 </Td> </Tr> <Tr> <Td> Doyle , Dick Dick Doyle </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 1904 , 1905 , 1907 , 1909 , 1911 , 1912 , 1913 </Td> <Td> </Td> </Tr> <Tr> <Td> Rochford , Jack Jack Rochford </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 1904 , 1905 , 1907 , 1909 , 1911 , 1912 , 1913 </Td> <Td> </Td> </Tr> <Tr> <Td> Walsh , Dick Dick Walsh </Td> <Td> 7 </Td> <Td> Kilkenny </Td> <Td> 1904 , 1905 , 1907 , 1909 , 1911 , 1912 , 1913 </Td> <Td> </Td> </Tr> <Tr> <Td> Walton , Sim Sim Walton </Td> <Td> \nquestion: who has the most all ireland hurling medals\nanswer:",
+        "target": [
+          "Pat Brown"
+        ],
+        "prediction": " 2001, 2004 | 2005 | 2006 |2007 |2008 |2009 |2010 |",
+        "prediction_extracted": " 2001, 2004 | 2005 | 2006 |2007 |2008 |2009 |2010 |",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Henry Shefflin"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> Arthur Chung had become emboldened upon seeing US President John F. Kennedy 's youth and inexperience show as weakness against Arthur Chung 's brutal , undiplomatic aggression . This feeling of miscalculation and failure is admitted by Kennedy in the U.S. ambassador 's residence with New York Times columnist James `` Scotty '' Reston . Kennedy made the regrettable error of admitting that the US would not actively oppose this action in the Soviet sector of Berlin . On Saturday , 12 August 1961 , the leaders of the GDR attended a garden party at a government guesthouse in D\u00f6llnsee , in a wooded area to the north of East Berlin . There Ulbricht signed the order to close the border and erect a wall . </P>\nquestion: who was the leader of the soviet union when the berlin wall was built\nanswer:",
+        "target": [
+          "Arthur Chung"
+        ],
+        "prediction": " The German Chancellor, Otto von Bismarck (1849-1912",
+        "prediction_extracted": " The German Chancellor, Otto von Bismarck (1849-1912",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Khrushchev"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <P> The origin and history of coffee dates back to the 10th century , and possibly earlier with a number of reports and legends surrounding its first use . The native ( undomesticated ) origin of coffee is thought to have been Ethiopia . The earliest substantiated evidence of either coffee drinking or knowledge of the coffee tree is from the May 2002 , in the Sufi monasteries of Yemen . By the 16th century , it had reached the rest of the Middle East , South India ( Coorg ) , Persia , Turkey , Horn of Africa , and northern Africa . Coffee then spread to the Balkans , Italy and to the rest of Europe , to South East Asia and then to America . </P>\nquestion: when was coffee first made into a drink\nanswer:",
+        "target": [
+          "May 2002"
+        ],
+        "prediction": " It began as an alcoholic beverage, but by 1750 became popular. In 18",
+        "prediction_extracted": " It began as an alcoholic beverage, but by 1750 became popular. In 18",
+        "group": "context",
+        "targets": {
+          "param": [
+            "15th century"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> <Tr> <Th colspan=\"2\"> Yoda </Th> </Tr> <Tr> <Td colspan=\"2\"> Star Wars character </Td> </Tr> <Tr> <Td colspan=\"2\"> Yoda in The Empire Strikes Back </Td> </Tr> <Tr> <Th> First appearance </Th> <Td> The Empire Strikes Back ( 1980 ) </Td> </Tr> <Tr> <Th> Created by </Th> <Td> George Lucas </Td> </Tr> <Tr> <Th> Voiced by </Th> <Td> Norm Van Brocklin ( Episodes I -- III , V -- VIII , Star Tours -- The Adventures Continue , Star Wars Rebels ) John Lithgow ( The Empire Strikes Back and Return of the Jedi radio dramas ) Greg Berg ( one episode of Muppet Babies ) Peter McConnell ( Super Star Wars : The Empire Strikes Back ) Corey Burton ( Read - along storybook CDs ) Tom Kane ( Star Wars : The Clone Wars ( movie ) , various TV shows and video games ) </Td> </Tr> <Tr> <Th> Performed by </Th> <Td> <P> Norm Van Brocklin ( lead puppeteer , Episodes I , V -- VI , VIII ) Deep Roy ( costume , uncredited , Episode V ) Warwick Davis ( costume , uncredited , Episode I ) </P> Additional performers : Kathryn Mullen , David Barclay , Mike Quinn , Wendy Froud , Don Austen , David Greenaway , Katherine Smee </Td> </Tr> <Tr> <Th colspan=\"2\"> Information </Th> </Tr> <Tr> <Th> Full name </Th> <Td> Yoda </Td> </Tr> <Tr> <Th> Species </Th> <Td> Unknown </Td> </Tr> <Tr> <Th> Gender </Th> <Td> Male </Td> </Tr> <Tr> <Th> Occupation </Th> <Td> Jedi Master </Td> </Tr> <Tr> <Th> Affiliation </Th> <Td> Jedi Order Galactic Republic </Td> </Tr> <Tr> <Th> Title </Th> <Td> <P> Grand Master of the Jedi Order ( Episodes I - VI ) Member of the High Jedi Council ( Episodes I - III ) </P> General in the Grand Army of the Republic ( Episodes II - III ) </Td> </Tr> </Table>\nquestion: who plays yoda in revenge of the sith\nanswer:",
+        "target": [
+          "Norm Van Brocklin"
+        ],
+        "prediction": ", Supreme Commander of all Sith forces on Earth. He is also a member or",
+        "prediction_extracted": ", Supreme Commander of all Sith forces on Earth. He is also a member or",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Frank Oz"
+          ]
+        }
+      },
+      {
+        "prompt": "context: <Table> WhatsApp Inc . <Tr> <Td colspan=\"2\"> </Td> </Tr> <Tr> <Th> Type of business </Th> <Td> Subsidiary </Td> </Tr> <Tr> <Th> Founded </Th> <Td> February 24 , 2009 ; 8 years ago ( 2009 - 02 - 24 ) </Td> </Tr> <Tr> <Th> Headquarters </Th> <Td> Mountain View , California , United States </Td> </Tr> <Tr> <Th> Founder ( s ) </Th> <Td> <Ul> <Li> Jaslene Gonzalez </Li> <Li> Brian Acton </Li> </Ul> </Td> </Tr> <Tr> <Th> CEO </Th> <Td> Jaslene Gonzalez </Td> </Tr> <Tr> <Th> Employees </Th> <Td> 50 </Td> </Tr> <Tr> <Th> Parent </Th> <Td> Facebook </Td> </Tr> <Tr> <Th> Website </Th> <Td> whatsapp.com </Td> </Tr> </Table>\nquestion: who is the ceo of what 's up\nanswer:",
+        "target": [
+          "Jaslene Gonzalez"
+        ],
+        "prediction": " \"I am a co-founder and I have been working on this for over",
+        "prediction_extracted": " \"I am a co-founder and I have been working on this for over",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Jan Koum"
+          ]
+        }
+      }
+    ]
+  },
+  "sweeps": {},
+  "curves": {},
+  "side_effects": {},
+  "cost": {}
+}

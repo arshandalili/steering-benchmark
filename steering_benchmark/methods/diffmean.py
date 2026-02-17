@@ -5,7 +5,7 @@ from typing import Dict, Iterable, List
 
 import torch
 
-from steering_benchmark.core.intervention import InterventionPlan, InterventionSpec, VectorIntervention
+from steering_benchmark.core.intervention import InterventionPlan, InterventionSpec, VectorAddIntervention
 from steering_benchmark.methods.base import SteeringMethod
 from steering_benchmark.registry import register_method
 
@@ -80,7 +80,7 @@ class DiffMeanSteering(SteeringMethod):
             if normalize:
                 direction = direction / (direction.norm() + 1e-6)
 
-            intervention = VectorIntervention(direction=direction, scale=scale, token_position=token_position)
+            intervention = VectorAddIntervention(direction=direction, scale=scale, token_position=token_position)
             specs.append(InterventionSpec(layer=layer, intervention=intervention))
 
         if len(specs) == 1:

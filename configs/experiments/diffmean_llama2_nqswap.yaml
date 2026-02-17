@@ -1,6 +1,6 @@
 name: diffmean_llama2_nqswap
 model: llama2_7b
-dataset: nqswap
+dataset: nq_swap_hf
 method: diffmean
 run:
   seed: 42
@@ -12,6 +12,7 @@ run:
   eval:
     group: context
     max_examples: 200
+    answer_extraction: first_line
     metrics:
       - exact_match
     generation:

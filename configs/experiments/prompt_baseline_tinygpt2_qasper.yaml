@@ -1,0 +1,29 @@
+name: prompt_baseline_tinygpt2_qasper
+model: tiny_gpt2
+dataset: qasper
+method: prompt_baseline
+run:
+  train:
+    group_a: context
+    group_b: no_context
+    max_examples: 128
+    batch_size: 8
+  eval:
+    group: context
+    metrics:
+    - exact_match
+    - answer_in_context
+    max_examples: 64
+    generation:
+      max_new_tokens: 32
+      do_sample: false
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors:
+  - 0.5
+  - 1.0
+  - 2.0
+method_overrides:
+  mode: auto

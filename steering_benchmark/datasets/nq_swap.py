@@ -32,6 +32,7 @@ class NQSwapDataset(BaseDataset):
         split: str = "dev",
         cache_dir: Optional[str] = None,
         hf_token: Optional[str] = None,
+        revision: Optional[str] = None,
         seed: int = 42,
         split_ratios: Optional[Dict[str, float]] = None,
         split_counts: Optional[Dict[str, int]] = None,
@@ -46,21 +47,31 @@ class NQSwapDataset(BaseDataset):
         test_example_org_context: bool = False,
         context_template: str = "context: {context}\nquestion: {question}\nanswer:",
         param_template: str = "question: {question}\nanswer:",
+        context_template_with_answer: str = "context: {context}\nquestion: {question}\nanswer: {answer}",
+        param_template_with_answer: str = "context: {context}\nquestion: {question}\nanswer: {answer}",
         context_field: str = "sub_context",
         org_context_field: str = "org_context",
+        param_context_field: Optional[str] = None,
         question_field: str = "question",
         context_answer_field: str = "sub_answer",
         param_answer_field: str = "org_answer",
         answer_policy: str = "first",
+        train_use_answer: bool = False,
+        train_include_param_context: bool = False,
     ) -> None:
         self.context_template = context_template
         self.param_template = param_template
+        self.context_template_with_answer = context_template_with_answer
+        self.param_template_with_answer = param_template_with_answer
         self.context_field = context_field
         self.org_context_field = org_context_field
+        self.param_context_field = param_context_field or org_context_field
         self.question_field = question_field
         self.context_answer_field = context_answer_field
         self.param_answer_field = param_answer_field
         self.answer_policy = answer_policy
+        self.train_use_answer = bool(train_use_answer)
+        self.train_include_param_context = bool(train_include_param_context)
         self.split_policy = split_policy
         self.shuffle_splits = shuffle_splits
         self.split_names = list(split_names) if split_names is not None else ["train", "eval", "test"]
@@ -77,6 +88,7 @@ class NQSwapDataset(BaseDataset):
             split=split,
             cache_dir=cache_dir,
             token=hf_token,
+            revision=revision,
         )
         if max_rows is not None:
             dataset = dataset.select(range(min(max_rows, len(dataset))))
@@ -179,11 +191,19 @@ class NQSwapDataset(BaseDataset):
             raise KeyError(f"Unknown split: {split}")
         return self._indices_by_split[split]
 
-    def _build_prompt(self, row: Dict[str, str], template: str, context_field: Optional[str] = None) -> str:
+    def _build_prompt(
+        self,
+        row: Dict[str, str],
+        template: str,
+        context_field: Optional[str] = None,
+        answer: Optional[str] = None,
+    ) -> str:
         data = {
             "question": row.get(self.question_field, ""),
             "context": row.get(context_field or self.context_field, ""),
         }
+        if answer is not None:
+            data["answer"] = answer
         return template.format(**data)
 
     def iter_group(
@@ -197,25 +217,55 @@ class NQSwapDataset(BaseDataset):
         for idx in indices:
             row = self._dataset[int(idx)]
             question = row.get(self.question_field, "")
+            use_answer = self.train_use_answer and split == "train"
             if group == "context":
-                test_ctx_field = self.org_context_field if self.test_example_org_context else self.context_field
-                prompt = self._build_prompt(row, self.context_template, test_ctx_field)
+                if use_answer:
+                    ctx_field = self.context_field
+                else:
+                    ctx_field = self.org_context_field if self.test_example_org_context else self.context_field
+                context_value = row.get(ctx_field, "")
+                ctx_answer = _normalize_answer(row.get(self.context_answer_field), self.answer_policy)
+                ctx_answer_prompt = ctx_answer[0] if isinstance(ctx_answer, list) and ctx_answer else ctx_answer
+                if use_answer:
+                    prompt = self._build_prompt(
+                        row,
+                        self.context_template_with_answer,
+                        ctx_field,
+                        answer=str(ctx_answer_prompt),
+                    )
+                else:
+                    prompt = self._build_prompt(row, self.context_template, ctx_field)
                 if self._demo_prefix_with_ctx:
                     prompt = self._demo_prefix_with_ctx + prompt
-                target = _normalize_answer(row.get(self.context_answer_field), self.answer_policy)
+                target = ctx_answer
                 alt_target = _normalize_answer(row.get(self.param_answer_field), self.answer_policy)
                 targets = {"param": alt_target}
             elif group == "param":
-                prompt = self.param_template.format(question=question)
+                if use_answer:
+                    param_ctx_field = self.param_context_field
+                else:
+                    param_ctx_field = self.param_context_field if self.train_include_param_context else None
+                context_value = row.get(param_ctx_field or self.context_field, "")
+                param_answer = _normalize_answer(row.get(self.param_answer_field), self.answer_policy)
+                param_answer_prompt = param_answer[0] if isinstance(param_answer, list) and param_answer else param_answer
+                if use_answer:
+                    prompt = self._build_prompt(
+                        row,
+                        self.param_template_with_answer,
+                        param_ctx_field or self.context_field,
+                        answer=str(param_answer_prompt),
+                    )
+                else:
+                    prompt = self.param_template.format(question=question)
                 if self._demo_prefix_without_ctx:
                     prompt = self._demo_prefix_without_ctx + prompt
-                target = _normalize_answer(row.get(self.param_answer_field), self.answer_policy)
+                target = param_answer
                 alt_target = _normalize_answer(row.get(self.context_answer_field), self.answer_policy)
                 targets = {"context": alt_target}
             else:
                 raise KeyError(f"Unknown group: {group}")
 
-            meta = {"row_id": str(idx)}
+            meta = {"row_id": str(idx), "context": str(context_value)}
             yield Example(prompt=prompt, target=target, group=group, meta=meta, targets=targets)
             count += 1
             if limit is not None and count >= limit:
@@ -233,17 +283,45 @@ class NQSwapDataset(BaseDataset):
         for idx in indices:
             row = self._dataset[int(idx)]
             question = row.get(self.question_field, "")
+            use_answer = self.train_use_answer and split == "train"
 
-            test_ctx_field = self.org_context_field if self.test_example_org_context else self.context_field
-            ctx_prompt = self._build_prompt(row, self.context_template, test_ctx_field)
+            if use_answer:
+                test_ctx_field = self.context_field
+            else:
+                test_ctx_field = self.org_context_field if self.test_example_org_context else self.context_field
+            ctx_answer = _normalize_answer(row.get(self.context_answer_field), self.answer_policy)
+            ctx_answer_prompt = ctx_answer[0] if isinstance(ctx_answer, list) and ctx_answer else ctx_answer
+            if use_answer:
+                ctx_prompt = self._build_prompt(
+                    row,
+                    self.context_template_with_answer,
+                    test_ctx_field,
+                    answer=str(ctx_answer_prompt),
+                )
+            else:
+                ctx_prompt = self._build_prompt(row, self.context_template, test_ctx_field)
             if self._demo_prefix_with_ctx:
                 ctx_prompt = self._demo_prefix_with_ctx + ctx_prompt
-            param_prompt = self.param_template.format(question=question)
+            if use_answer:
+                param_ctx_field = self.param_context_field
+            else:
+                param_ctx_field = self.param_context_field if self.train_include_param_context else None
+            param_answer = _normalize_answer(row.get(self.param_answer_field), self.answer_policy)
+            param_answer_prompt = param_answer[0] if isinstance(param_answer, list) and param_answer else param_answer
+            if use_answer:
+                param_prompt = self._build_prompt(
+                    row,
+                    self.param_template_with_answer,
+                    param_ctx_field or self.context_field,
+                    answer=str(param_answer_prompt),
+                )
+            else:
+                param_prompt = self.param_template.format(question=question)
             if self._demo_prefix_without_ctx:
                 param_prompt = self._demo_prefix_without_ctx + param_prompt
 
-            ctx_target = _normalize_answer(row.get(self.context_answer_field), self.answer_policy)
-            param_target = _normalize_answer(row.get(self.param_answer_field), self.answer_policy)
+            ctx_target = ctx_answer
+            param_target = param_answer
 
             ctx_example = Example(
                 prompt=ctx_prompt,

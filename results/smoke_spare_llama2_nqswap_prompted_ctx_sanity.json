@@ -1,0 +1,177 @@
+{
+  "config": {
+    "name": "smoke_spare_llama2_nqswap_prompted_ctx_sanity",
+    "model": {
+      "type": "hf",
+      "hf_id": "meta-llama/Llama-2-7b-hf",
+      "dtype": "bfloat16",
+      "device_map": "auto",
+      "trust_remote_code": false,
+      "hook_module": "model.layers.{layer}"
+    },
+    "dataset": {
+      "loader": "nq_swap",
+      "split": "dev",
+      "cache_dir": ".hf_cache",
+      "split_ratios": {
+        "train": 0.6,
+        "eval": 0.2,
+        "test": 0.2
+      },
+      "answer_policy": "list",
+      "train_use_answer": false,
+      "train_include_param_context": false,
+      "max_rows": 4096,
+      "k_shot": 3,
+      "demo_pool_size": 128,
+      "demonstrations_org_context": true,
+      "demonstrations_org_answer": true,
+      "test_example_org_context": false,
+      "context_template": "context: {context}\nquestion: {question}\nanswer:",
+      "param_template": "question: {question}\nanswer:"
+    },
+    "method": {
+      "name": "spare",
+      "layer": 15,
+      "token_position": "last",
+      "scale": 2.6,
+      "normalize": true,
+      "sae": {
+        "release": "yuzhaouoe/Llama2-7b-SAE",
+        "sae_id": "layers.{layer}",
+        "device": "cuda",
+        "dtype": "float32",
+        "activation": "relu",
+        "topk_proportion": 0.07,
+        "use_confidence_weights": true,
+        "mi_proportion": 0.06
+      },
+      "layers": [
+        12,
+        13,
+        14,
+        15
+      ],
+      "target_behavior": "context"
+    },
+    "run": {
+      "seed": 42,
+      "factors": [
+        1.0
+      ],
+      "splits": {
+        "train": "train",
+        "eval": "eval",
+        "test": "test"
+      },
+      "train": {
+        "group_a": "context",
+        "group_b": "param",
+        "group_pos": "context",
+        "group_neg": "param",
+        "max_examples": 8,
+        "batch_size": 16
+      },
+      "grouping": {
+        "group": "context",
+        "split": "train",
+        "max_examples": 8,
+        "batch_size": 16,
+        "answer_extraction": "first_line",
+        "generation": {
+          "max_new_tokens": 6,
+          "do_sample": false,
+          "max_prompt_tokens": 2048,
+          "eos_token_id_text": "\n\n"
+        }
+      },
+      "eval": {
+        "group": "context",
+        "split": "eval",
+        "test_split": "test",
+        "max_examples": 1,
+        "answer_extraction": "first_line",
+        "metrics": [
+          "exact_match"
+        ],
+        "generation": {
+          "max_new_tokens": 6,
+          "do_sample": false,
+          "max_prompt_tokens": 2048,
+          "eos_token_id_text": "\n\n"
+        }
+      }
+    },
+    "output_dir": "results"
+  },
+  "factor_selection": {
+    "metric": "exact_match",
+    "best_factor": 1.0,
+    "eval_baseline": {
+      "exact_match": 1.0,
+      "exact_match_param": 0.0
+    },
+    "eval_factors": {
+      "1.0": {
+        "exact_match": 1.0,
+        "exact_match_param": 0.0
+      }
+    }
+  },
+  "test": {
+    "baseline": {
+      "exact_match": 0.0,
+      "exact_match_param": 0.0
+    },
+    "steered": {
+      "exact_match": 1.0,
+      "exact_match_param": 0.0
+    }
+  },
+  "outputs": {
+    "baseline": [
+      {
+        "prompt": "context: <P> Johannes Gutenberg , a goldsmith by profession , developed , circa 1439 , a printing system by adapting existing technologies to printing purposes , as well as making inventions of his own . Printing in East Asia had been prevalent since the Tang dynasty , and in Europe , woodblock printing based on existing screw presses was common by the 14th century . Gutenberg 's most important innovation was the development of hand - molded metal printing matrices , thus producing a movable type based printing press system . His newly devised hand mould made possible the precise and rapid creation of metal movable type in large quantities . Movable type had been hitherto unknown in Europe . In Europe , the two inventions , the hand mould and the printing press , together drastically reduced the cost of printing books and other documents , particularly in short print runs . </P>\nquestion: who invented the printing press and what year\nanswer: Johannes Gutenberg\n\ncontext: <P> Actor Jason Lee also portrays David Seville in a series of films about Alvin and the Chipmunks which uses a combination of live - action acting and computer animation . While Ross Bagdasarian , Jr. does not do any voices for the film series , the films are all produced in association with Bagdasarian Productions , which owns the rights to all of the characters . </P>\nquestion: who plays david in alvin and the chipmunks\nanswer: Jason Lee\n\ncontext: <P> Super Bowl LII was an American football game played to determine the champion of the National Football League ( NFL ) for the 2017 season . The National Football Conference ( NFC ) champion Philadelphia Eagles defeated the American Football Conference ( AFC ) and defending Super Bowl LI champion New England Patriots , 41 -- 33 , to win their first Super Bowl and their first NFL title since 1960 . The game was played on February 4 , 2018 , at U.S. Bank Stadium in Minneapolis , Minnesota . This was the second time that a Super Bowl was played in Minneapolis , the northernmost city to ever host the event , after Super Bowl XXVI at the Metrodome during the 1991 season , and the sixth Super Bowl held in a cold - weather city . </P>\nquestion: who are the two teams in super bowl 2018\nanswer: Philadelphia Eagles\n\ncontext: <Li> Jack Lord as Susannah Fincannon - Ludlow </Li>\nquestion: who played susanna in legends of the fall\nanswer:",
+        "target": [
+          "Jack Lord"
+        ],
+        "target_selected": [
+          "Jack Lord"
+        ],
+        "target_key": null,
+        "prediction": "Susan Sarandon\n",
+        "prediction_extracted": "Susan Sarandon",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Julia Ormond"
+          ]
+        }
+      }
+    ],
+    "steered": [
+      {
+        "prompt": "context: <P> Johannes Gutenberg , a goldsmith by profession , developed , circa 1439 , a printing system by adapting existing technologies to printing purposes , as well as making inventions of his own . Printing in East Asia had been prevalent since the Tang dynasty , and in Europe , woodblock printing based on existing screw presses was common by the 14th century . Gutenberg 's most important innovation was the development of hand - molded metal printing matrices , thus producing a movable type based printing press system . His newly devised hand mould made possible the precise and rapid creation of metal movable type in large quantities . Movable type had been hitherto unknown in Europe . In Europe , the two inventions , the hand mould and the printing press , together drastically reduced the cost of printing books and other documents , particularly in short print runs . </P>\nquestion: who invented the printing press and what year\nanswer: Johannes Gutenberg\n\ncontext: <P> Actor Jason Lee also portrays David Seville in a series of films about Alvin and the Chipmunks which uses a combination of live - action acting and computer animation . While Ross Bagdasarian , Jr. does not do any voices for the film series , the films are all produced in association with Bagdasarian Productions , which owns the rights to all of the characters . </P>\nquestion: who plays david in alvin and the chipmunks\nanswer: Jason Lee\n\ncontext: <P> Super Bowl LII was an American football game played to determine the champion of the National Football League ( NFL ) for the 2017 season . The National Football Conference ( NFC ) champion Philadelphia Eagles defeated the American Football Conference ( AFC ) and defending Super Bowl LI champion New England Patriots , 41 -- 33 , to win their first Super Bowl and their first NFL title since 1960 . The game was played on February 4 , 2018 , at U.S. Bank Stadium in Minneapolis , Minnesota . This was the second time that a Super Bowl was played in Minneapolis , the northernmost city to ever host the event , after Super Bowl XXVI at the Metrodome during the 1991 season , and the sixth Super Bowl held in a cold - weather city . </P>\nquestion: who are the two teams in super bowl 2018\nanswer: Philadelphia Eagles\n\ncontext: <Li> Jack Lord as Susannah Fincannon - Ludlow </Li>\nquestion: who played susanna in legends of the fall\nanswer:",
+        "target": [
+          "Jack Lord"
+        ],
+        "target_selected": [
+          "Jack Lord"
+        ],
+        "target_key": null,
+        "prediction": "Jack Lord",
+        "prediction_extracted": "Jack Lord",
+        "group": "context",
+        "targets": {
+          "param": [
+            "Julia Ormond"
+          ]
+        }
+      }
+    ]
+  },
+  "sweeps": {},
+  "curves": {},
+  "side_effects": {},
+  "cost": {}
+}

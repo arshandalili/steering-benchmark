@@ -1,0 +1,24 @@
+name: smoke_tinygpt2_nqswap
+model: tiny_gpt2
+dataset: nq_swap_hf
+method: diffmean
+method_overrides:
+  layer: 1
+run:
+  train:
+    max_examples: 16
+    batch_size: 4
+  eval:
+    group: context
+    metrics: ["exact_match"]
+    max_examples: 8
+    generation:
+      max_new_tokens: 8
+      do_sample: false
+      no_repeat_ngram_size: 2
+      repetition_penalty: 1.1
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors: [0.5, 1.0]

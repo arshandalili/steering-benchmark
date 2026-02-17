@@ -1,0 +1,27 @@
+name: actadd_tinygpt2_flores200_es
+model: tiny_gpt2
+dataset: flores200_es
+method: actadd
+run:
+  train:
+    group_a: translate
+    group_b: copy
+    max_examples: 128
+    batch_size: 8
+  eval:
+    group: translate
+    metrics:
+    - bleu
+    - language_id_accuracy
+    max_examples: 64
+    generation:
+      max_new_tokens: 32
+      do_sample: false
+  splits:
+    train: train
+    eval: eval
+    test: test
+  factors:
+  - 0.5
+  - 1.0
+  - 2.0
