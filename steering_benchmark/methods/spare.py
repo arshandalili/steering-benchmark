@@ -575,30 +575,50 @@ class SpARESteering(SteeringMethod):
         group = grouping_cfg.get("group", eval_cfg.get("group", "context"))
         split = grouping_cfg.get("split", splits_cfg.get("train"))
         max_examples = grouping_cfg.get("max_examples", run_cfg.get("train", {}).get("max_examples", 512))
-        gen_cfg = grouping_cfg.get("generation", eval_cfg.get("generation", {"max_new_tokens": 8, "do_sample": False}))
+        gen_cfg = grouping_cfg.get(
+            "generation",
+            eval_cfg.get(
+                "generation",
+                {"max_new_tokens": 12, "do_sample": False, "eos_token_id_text": "\n\n"},
+            ),
+        )
         answer_extraction = grouping_cfg.get("answer_extraction", eval_cfg.get("answer_extraction", "first_line"))
+        strict_disjoint_labels = bool(grouping_cfg.get("strict_disjoint_labels", True))
+        if isinstance(group, (list, tuple)):
+            groups_to_scan = [str(g) for g in group]
+        elif str(group).lower() in {"both", "all"}:
+            groups_to_scan = ["context", "param"]
+        else:
+            groups_to_scan = [str(group)]
 
         prompts_context: List[GroupedExample] = []
         prompts_param: List[GroupedExample] = []
-        for ex in dataset.iter_group(group, limit=max_examples, split=split):
-            if ex.targets is None:
-                raise ValueError("SpARE requires dataset examples with both context and param targets.")
-            ctx_target = ex.target if ex.group == "context" else ex.targets.get("context")
-            param_target = ex.target if ex.group == "param" else ex.targets.get("param")
-            if ctx_target is None or param_target is None:
-                continue
-            pred_raw = model.generate(ex.prompt, intervention=None, gen_cfg=gen_cfg)
-            pred = _postprocess_prediction(pred_raw, answer_extraction)
-            match_ctx = _is_match(pred, ctx_target)
-            match_param = _is_match(pred, param_target)
-            if match_ctx and not match_param:
-                prompts_context.append(
-                    GroupedExample(prompt=ex.prompt, target_context=ctx_target, target_param=param_target)
-                )
-            elif match_param and not match_ctx:
-                prompts_param.append(
-                    GroupedExample(prompt=ex.prompt, target_context=ctx_target, target_param=param_target)
-                )
+        for group_name in groups_to_scan:
+            for ex in dataset.iter_group(group_name, limit=max_examples, split=split):
+                if ex.targets is None:
+                    raise ValueError("SpARE requires dataset examples with both context and param targets.")
+                ctx_target = ex.target if ex.group == "context" else ex.targets.get("context")
+                param_target = ex.target if ex.group == "param" else ex.targets.get("param")
+                if ctx_target is None or param_target is None:
+                    continue
+                pred_raw = model.generate(ex.prompt, intervention=None, gen_cfg=gen_cfg)
+                pred = _postprocess_prediction(pred_raw, answer_extraction)
+                match_ctx = _is_match(pred, ctx_target)
+                match_param = _is_match(pred, param_target)
+                if match_ctx and match_param:
+                    if strict_disjoint_labels:
+                        raise RuntimeError(
+                            "SpARE grouping requires disjoint labels, but prediction matched both context and param."
+                        )
+                    continue
+                if match_ctx:
+                    prompts_context.append(
+                        GroupedExample(prompt=ex.prompt, target_context=ctx_target, target_param=param_target)
+                    )
+                if match_param:
+                    prompts_param.append(
+                        GroupedExample(prompt=ex.prompt, target_context=ctx_target, target_param=param_target)
+                    )
         return prompts_context, prompts_param
 
     def _collect_features(
@@ -626,7 +646,21 @@ class SpARESteering(SteeringMethod):
             raise RuntimeError("No features collected for SpARE.")
         return torch.cat(feats, dim=0)
 
-    def _confidence_weights(self, model, examples: List[GroupedExample], numerator: str) -> torch.Tensor:
+    def _full_sequence_nll(self, model, text: str) -> float:
+        if not hasattr(model, "tokenizer") or not hasattr(model, "model"):
+            raise AttributeError("Model adapter does not expose tokenizer/model for full-sequence NLL.")
+        inputs = model.tokenizer(text, return_tensors="pt").to(model.device)
+        with torch.no_grad():
+            outputs = model.model(**inputs, labels=inputs["input_ids"], return_dict=True)
+        return float(outputs.loss.detach().cpu().item())
+
+    def _confidence_weights(
+        self,
+        model,
+        examples: List[GroupedExample],
+        numerator: str,
+        loss_mode: str = "full_sequence",
+    ) -> torch.Tensor:
         weights: List[float] = []
         for ex in examples:
             ctx_target = _select_target(ex.target_context)
@@ -634,10 +668,16 @@ class SpARESteering(SteeringMethod):
             if not ctx_target or not param_target:
                 weights.append(1.0)
                 continue
-            # model.loglikelihood returns NLL; upstream SpARE weights use the
-            # opposite-answer loss in the numerator (ss/so cross weighting).
-            nll_ctx = float(model.loglikelihood(ex.prompt, ctx_target))
-            nll_param = float(model.loglikelihood(ex.prompt, param_target))
+            if loss_mode == "full_sequence":
+                # Upstream SpARE computes ss/so losses on the full prompt+answer text.
+                nll_ctx = self._full_sequence_nll(model, ex.prompt + ctx_target)
+                nll_param = self._full_sequence_nll(model, ex.prompt + param_target)
+            elif loss_mode == "continuation":
+                # Fallback: continuation-only NLL via model adapter.
+                nll_ctx = float(model.loglikelihood(ex.prompt, ctx_target))
+                nll_param = float(model.loglikelihood(ex.prompt, param_target))
+            else:
+                raise ValueError(f"Unsupported SpARE confidence loss_mode: {loss_mode}")
             denom = nll_ctx + nll_param
             if denom == 0:
                 weights.append(0.5)
@@ -658,12 +698,18 @@ class SpARESteering(SteeringMethod):
         feats_context: torch.Tensor,
         feats_param: torch.Tensor,
         chunk_size: int,
+        minmax_normalisation: bool = True,
     ) -> np.ndarray:
         try:
             from sklearn.feature_selection import mutual_info_classif
         except Exception as exc:
             raise ImportError("scikit-learn is required for SpARE mutual information") from exc
         x = torch.cat([feats_context, feats_param], dim=0).cpu().numpy()
+        if minmax_normalisation:
+            from sklearn.preprocessing import MinMaxScaler
+
+            scaler = MinMaxScaler()
+            x = scaler.fit_transform(x)
         y = np.concatenate(
             [np.ones(len(feats_context), dtype=np.int32), np.zeros(len(feats_param), dtype=np.int32)]
         )
@@ -684,6 +730,7 @@ class SpARESteering(SteeringMethod):
         topk_prop: Optional[float],
         mi_prop: Optional[float],
         mi_chunk: int,
+        mi_minmax_normalisation: bool,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         if weights_context is not None:
             z_context = (weights_context.unsqueeze(1) * feats_context).sum(dim=0)
@@ -695,7 +742,12 @@ class SpARESteering(SteeringMethod):
             z_param = feats_param.mean(dim=0)
         diff = z_context - z_param
 
-        mi = self._mutual_information(feats_context, feats_param, chunk_size=mi_chunk)
+        mi = self._mutual_information(
+            feats_context,
+            feats_param,
+            chunk_size=mi_chunk,
+            minmax_normalisation=mi_minmax_normalisation,
+        )
         mi_sorted = np.sort(mi)[::-1]
         if topk_prop is not None:
             total = float(mi_sorted.sum())
@@ -746,7 +798,9 @@ class SpARESteering(SteeringMethod):
         topk_prop = sae_cfg.get("select_topk_proportion", sae_cfg.get("topk_proportion"))
         mi_prop = sae_cfg.get("mi_proportion", sae_cfg.get("select_k"))
         mi_chunk = int(sae_cfg.get("mi_chunk_size", 4096))
+        mi_minmax_normalisation = bool(sae_cfg.get("mi_minmax_normalisation", sae_cfg.get("minmax_normalisation", True)))
         use_confidence = bool(sae_cfg.get("use_confidence_weights", True))
+        confidence_loss_mode = str(sae_cfg.get("confidence_loss_mode", "full_sequence")).lower()
         use_upstream_cache = bool(sae_cfg.get("use_upstream_cache", True))
         if not sae_cfg.get("release") or not sae_cfg.get("sae_id"):
             if not (sae_cfg.get("local_format") == "mistral_sae_pt" and sae_cfg.get("local_path_template")):
@@ -782,8 +836,18 @@ class SpARESteering(SteeringMethod):
                 weights_context = None
                 weights_param = None
                 if use_confidence:
-                    weights_context = self._confidence_weights(model, prompts_context, numerator="context")
-                    weights_param = self._confidence_weights(model, prompts_param, numerator="param")
+                    weights_context = self._confidence_weights(
+                        model,
+                        prompts_context,
+                        numerator="context",
+                        loss_mode=confidence_loss_mode,
+                    )
+                    weights_param = self._confidence_weights(
+                        model,
+                        prompts_param,
+                        numerator="param",
+                        loss_mode=confidence_loss_mode,
+                    )
                 z_context, z_param = self._functional_activations(
                     feats_context,
                     feats_param,
@@ -793,6 +857,7 @@ class SpARESteering(SteeringMethod):
                     topk_prop=topk_prop,
                     mi_prop=mi_prop,
                     mi_chunk=mi_chunk,
+                    mi_minmax_normalisation=mi_minmax_normalisation,
                 )
             intervention = SpAREIntervention(
                 sae=sae,

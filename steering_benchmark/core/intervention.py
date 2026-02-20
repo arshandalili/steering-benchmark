@@ -222,9 +222,16 @@ class InterventionPlan:
 def scale_intervention(intervention, factor: float):
     if intervention is None:
         return None
+    scale_by = getattr(intervention, "scale_by", None)
+    if callable(scale_by):
+        return scale_by(factor)
     specs = getattr(intervention, "specs", None)
     if specs is None:
-        return InterventionSpec(layer=intervention.layer, intervention=intervention.intervention.scale_by(factor))
+        layer = getattr(intervention, "layer", None)
+        inner = getattr(intervention, "intervention", None)
+        if layer is None or inner is None or not hasattr(inner, "scale_by"):
+            raise TypeError(f"Unsupported intervention type for scaling: {type(intervention)!r}")
+        return InterventionSpec(layer=layer, intervention=inner.scale_by(factor))
     scaled_specs = []
     for spec in specs:
         scaled_specs.append(

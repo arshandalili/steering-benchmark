@@ -14,19 +14,25 @@ nqswap:
     param: answer_param
 
 macnoise:
-  loader: jsonl_template
-  path: data/macnoise.jsonl
-  fields:
-    question: question
-    context: context
-    answer_context: answer_context
-    answer_param: answer_param
-  templates:
-    context: "Context: {context}\nQuestion: {question}\nAnswer:"
-    param: "Question: {question}\nAnswer:"
-  targets:
-    context: answer_context
-    param: answer_param
+  loader: macnoise
+  split: train_chatgpt
+  demonstrations_split: train
+  cache_dir: data/hf
+  max_rows: 5120
+  split_policy: shared
+  shuffle_splits: false
+  k_shot: 4
+  demo_pool_size: 70
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: false
+  answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
+  context_template: "context: {context}\nquestion: {question}\nanswer:"
+  param_template: "question: {question}\nanswer:"
+  context_template_with_answer: "context: {context}\nquestion: {question}\nanswer: {answer}"
+  param_template_with_answer: "question: {question}\nanswer: {answer}"
 
 nq_swap_hf:
   loader: nq_swap
@@ -128,6 +134,48 @@ nq_swap_closebook_sae:
   answer_policy: list
   train_use_answer: true
   train_include_param_context: true
+
+macnoise_openbook_sae:
+  loader: macnoise
+  split: train_chatgpt
+  demonstrations_split: train
+  cache_dir: data/hf
+  max_rows: 5120
+  split_policy: shared
+  shuffle_splits: false
+  k_shot: 4
+  demo_pool_size: 70
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: false
+  answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
+  context_template: "context: {context}\nquestion: {question}\nanswer:"
+  param_template: "question: {question}\nanswer:"
+  context_template_with_answer: "context: {context}\nquestion: {question}\nanswer: {answer}"
+  param_template_with_answer: "question: {question}\nanswer: {answer}"
+
+macnoise_openbook_spare:
+  loader: macnoise
+  split: train_chatgpt
+  demonstrations_split: train
+  cache_dir: data/hf
+  max_rows: 5120
+  split_policy: shared
+  shuffle_splits: false
+  k_shot: 3
+  demo_pool_size: 70
+  demonstrations_org_context: true
+  demonstrations_org_answer: true
+  test_example_org_context: false
+  answer_policy: list
+  train_use_answer: true
+  train_include_param_context: true
+  context_template: "context: {context}\nquestion: {question}\nanswer:"
+  param_template: "question: {question}\nanswer:"
+  context_template_with_answer: "context: {context}\nquestion: {question}\nanswer: {answer}"
+  param_template_with_answer: "question: {question}\nanswer: {answer}"
 
 squad_v2:
   loader: squad_v2

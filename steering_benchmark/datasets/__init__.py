@@ -9,3 +9,4 @@ from steering_benchmark.datasets.gyafc import GYAFCDataset  # noqa: F401
 from steering_benchmark.datasets.sst2_tone import SST2ToneDataset  # noqa: F401
 from steering_benchmark.datasets.empathetic_tone import EmpatheticToneDataset  # noqa: F401
 from steering_benchmark.datasets.flores200 import Flores200Dataset  # noqa: F401
+from steering_benchmark.datasets.macnoise import MACNoiseDataset  # noqa: F401

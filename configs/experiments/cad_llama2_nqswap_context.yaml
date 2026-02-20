@@ -1,0 +1,37 @@
+name: cad_llama2_nqswap_context
+model: llama2_7b
+dataset: nq_swap_openbook_sae
+method: cad_decoding
+method_overrides:
+  alpha: 1.0
+  plausibility_alpha: 0.1
+  temperature: 1.0
+  amateur_template: null
+run:
+  seed: 42
+  factors: [-4.0, -2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, 4.0]
+  factor_selection:
+    metric: exact_match
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_pos: context
+    group_neg: param
+    max_examples: 512
+    batch_size: 4
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: null
+    answer_extraction: first_line
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 12
+      do_sample: false
+      eos_token_id_text: "\n\n"
+      max_prompt_tokens: 4096

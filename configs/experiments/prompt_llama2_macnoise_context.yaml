@@ -1,0 +1,38 @@
+name: prompt_llama2_macnoise_context
+model: llama2_7b
+dataset: macnoise_openbook_sae
+method: prompt_baseline
+method_overrides:
+  mode: context
+  prompt_control: demo_rewrite
+  separator: ""
+  prefix_context: ""
+run:
+  seed: 42
+  factors: [1.0]
+  factor_selection:
+    metric: answer_in_context
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_a: context
+    group_b: param
+    max_examples: 512
+    batch_size: 4
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 200
+    answer_extraction: first_line
+    metrics:
+      - exact_match
+      - answer_in_context
+      - contains
+    generation:
+      max_new_tokens: 12
+      do_sample: false
+      eos_token_id_text: "\n\n"
+      max_prompt_tokens: 4096

@@ -12,6 +12,7 @@ class PromptBaselineSteering(SteeringMethod):
     def __init__(self, config: Dict) -> None:
         super().__init__(config)
         self.mode = config.get("mode", "context")
+        self.prompt_control = config.get("prompt_control", "auto")
         self.separator = config.get("separator", "\n\n")
         self.prefix_context = config.get(
             "prefix_context",
@@ -29,6 +30,20 @@ class PromptBaselineSteering(SteeringMethod):
         mode = self.mode
         if mode == "auto":
             mode = example.group
+
+        # Prefer demonstration-level prompt control when dataset supplies prompt parts.
+        if self.prompt_control in {"auto", "demo_rewrite", "demos"}:
+            meta = getattr(example, "meta", {}) or {}
+            prompt_body = meta.get("prompt_body")
+            if prompt_body is not None:
+                demo_prefix = None
+                if mode == "param":
+                    demo_prefix = meta.get("demo_prefix_param_control")
+                else:
+                    demo_prefix = meta.get("demo_prefix_context_control")
+                if demo_prefix is not None:
+                    return f"{demo_prefix}{prompt_body}"
+
         if mode == "param":
             prefix = self.prefix_param
         else:

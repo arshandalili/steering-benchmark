@@ -119,8 +119,7 @@ def dola_decode(
             best_score = None
             for layer_idx in early_layers:
                 layer_idx = min(max(0, int(layer_idx)), len(hidden_states) - 2)
-                hidden_idx = layer_idx + 1
-                early_hidden = hidden_states[hidden_idx][:, -1, :]
+                early_hidden = hidden_states[layer_idx][:, -1, :]
                 early_logits = lm_head(early_hidden) / max(temperature, 1e-6)
                 probs_early = F.softmax(early_logits, dim=-1)
                 jsd = _js_divergence(probs_last, probs_early)
@@ -132,8 +131,7 @@ def dola_decode(
         else:
             layer_idx = min(max(0, int(early_layer)), len(hidden_states) - 2)
 
-        hidden_idx = layer_idx + 1
-        early_hidden = hidden_states[hidden_idx][:, -1, :]
+        early_hidden = hidden_states[layer_idx][:, -1, :]
         early_logits = lm_head(early_hidden) / max(temperature, 1e-6)
         final_log_probs = F.log_softmax(last_logits, dim=-1)
         early_log_probs = F.log_softmax(early_logits, dim=-1)
@@ -154,7 +152,7 @@ def dola_decode(
         if top_p:
             logits = _top_p_filter(logits, float(top_p))
 
-        next_token = torch.argmax(logits, dim=-1, keepdim=True)
+        next_token = torch.argmax(logits, dim=-1, keepdim=True).to(input_ids.device)
         input_ids = torch.cat([input_ids, next_token], dim=-1)
         if max_prompt_tokens and input_ids.size(1) > max_prompt_tokens:
             input_ids = input_ids[:, -max_prompt_tokens:]

@@ -1,0 +1,40 @@
+name: dola_llama2_nqswap_context
+model: llama2_7b
+dataset: nq_swap_openbook_sae
+method: dola_decoding
+method_overrides:
+  alpha: 1.0
+  early_layer: 8
+  early_layers: [0, 2, 4, 6, 8, 10, 12, 14]
+  relative_top: 0.1
+  repetition_penalty: 1.0
+  post_softmax: true
+  strategy: max_jsd
+run:
+  seed: 42
+  factors: [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]
+  factor_selection:
+    metric: exact_match
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_pos: context
+    group_neg: param
+    max_examples: 512
+    batch_size: 4
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: null
+    answer_extraction: first_line
+    metrics:
+      - exact_match
+      - contains
+    generation:
+      max_new_tokens: 12
+      do_sample: false
+      eos_token_id_text: "\n\n"
+      max_prompt_tokens: 4096

@@ -86,7 +86,8 @@ def contrastive_decode(
 
         expert_log_probs = F.log_softmax(expert_logits, dim=-1)
         amateur_log_probs = F.log_softmax(amateur_logits, dim=-1)
-        logits = expert_log_probs - alpha * amateur_log_probs
+        # CAD objective: log p_c(y) + alpha * log(p_c(y) / p_a(y))
+        logits = (1.0 + alpha) * expert_log_probs - alpha * amateur_log_probs
 
         if plausibility_alpha is not None:
             expert_probs = F.softmax(expert_logits, dim=-1)

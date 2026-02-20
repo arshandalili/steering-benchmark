@@ -1,0 +1,49 @@
+name: spare_llama2_macnoise_context
+model: llama2_7b
+dataset: macnoise_openbook_spare
+method: spare
+method_overrides:
+  layers: [12, 13, 14, 15]
+  scale: 2.0
+  target_behavior: context
+  sae:
+    topk_proportion: 0.07
+    use_confidence_weights: true
+run:
+  seed: 42
+  factors: [1.0]
+  factor_selection:
+    metric: answer_in_context
+  splits:
+    train: train
+    eval: eval
+    test: test
+  train:
+    group_a: context
+    group_b: param
+    max_examples: 512
+    batch_size: 8
+  eval:
+    group: context
+    split: eval
+    test_split: test
+    max_examples: 200
+    answer_extraction: first_line
+    metrics:
+      - exact_match
+      - answer_in_context
+      - contains
+    generation:
+      max_new_tokens: 12
+      do_sample: false
+      eos_token_id_text: "\n\n"
+      max_prompt_tokens: 4096
+  grouping:
+    group: context
+    max_examples: 512
+    answer_extraction: first_line
+    generation:
+      max_new_tokens: 12
+      do_sample: false
+      eos_token_id_text: "\n\n"
+      max_prompt_tokens: 4096

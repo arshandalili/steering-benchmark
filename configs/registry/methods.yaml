@@ -103,7 +103,6 @@ cad_decoding:
   name: cad_decoding
   alpha: 1.0
   plausibility_alpha: 0.1
-  amateur_template: "{prompt}"
 
 dola_decoding:
   name: dola_decoding

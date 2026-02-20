@@ -1,6 +1,8 @@
 """Contrastive decoding baseline."""
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from typing import Dict, Optional
 
 from steering_benchmark.decoding.cad import contrastive_decode
@@ -8,11 +10,40 @@ from steering_benchmark.methods.base import SteeringMethod
 from steering_benchmark.registry import register_method
 
 
+@dataclass
+class _DecodingControl:
+    scale: float = 1.0
+
+    def scale_by(self, factor: float) -> "_DecodingControl":
+        return _DecodingControl(scale=self.scale * float(factor))
+
+
 @register_method("cad_decoding")
 class CADDecodingSteering(SteeringMethod):
     def __init__(self, config: Dict) -> None:
         super().__init__(config)
         self._amateur_model = None
+
+    @staticmethod
+    def _strip_context(prompt: str) -> str:
+        # For context QA prompts, CAD's amateur branch should use query-only input.
+        chunks = re.split(r"\n\s*\n", prompt.strip())
+        stripped_chunks = []
+        changed = False
+        for chunk in chunks:
+            match = re.search(r"question\s*:", chunk, flags=re.IGNORECASE)
+            if match:
+                stripped_chunks.append(chunk[match.start() :].lstrip())
+                changed = True
+            else:
+                stripped_chunks.append(chunk)
+        if changed:
+            return "\n\n".join(stripped_chunks)
+
+        match = re.search(r"(question\s*:.*)$", prompt, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return match.group(1).lstrip()
+        return prompt
 
     def _load_amateur(self, model):
         hf_id = self.config.get("amateur_hf_id")
@@ -44,18 +75,27 @@ class CADDecodingSteering(SteeringMethod):
         return self._amateur_model
 
     def fit(self, model, dataset, run_cfg: Dict):
-        return None
+        # CAD is decoding-time only; this control object lets factor sweeps scale alpha.
+        return _DecodingControl(scale=1.0)
 
     def generate(self, model, prompt: str, intervention=None, gen_cfg: Optional[dict] = None) -> str:
         gen_cfg = dict(gen_cfg or {})
+        if intervention is None:
+            return model.generate(prompt, intervention=None, gen_cfg=gen_cfg)
+        control_scale = float(getattr(intervention, "scale", 1.0))
+        if abs(control_scale) < 1e-12:
+            return model.generate(prompt, intervention=None, gen_cfg=gen_cfg)
         if not hasattr(model, "model") or not hasattr(model, "tokenizer"):
             return model.generate(prompt, intervention=intervention, gen_cfg=gen_cfg)
-        amateur_template = self.config.get("amateur_template", "{prompt}")
         amateur_prompt = self.config.get("amateur_prompt")
         if amateur_prompt is None:
-            amateur_prompt = amateur_template.format(prompt=prompt)
+            amateur_template = self.config.get("amateur_template")
+            if amateur_template:
+                amateur_prompt = amateur_template.format(prompt=prompt)
+            else:
+                amateur_prompt = self._strip_context(prompt)
         max_new_tokens = int(gen_cfg.get("max_new_tokens", 32))
-        alpha = float(self.config.get("alpha", self.config.get("weight", 1.0)))
+        alpha = float(self.config.get("alpha", self.config.get("weight", 1.0))) * control_scale
         plausibility_alpha = self.config.get("plausibility_alpha")
         temperature = float(self.config.get("temperature", 1.0))
         amateur_temperature = self.config.get("amateur_temperature")
